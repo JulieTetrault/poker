@@ -1,0 +1,8 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["maven", "maven-wrapper", "github-actions"],
+  "branchPrefix": "chore/renovate-",
+  "branchNameStrict": true,
+  "automerge": false
+}

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Style and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = pull_request ]; then
+            sh scripts/check-branch-name.sh "$BRANCH_NAME"
+          else
+            sh scripts/check-branch-name.sh "$BRANCH_NAME" --allow-main
+          fi
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version-file: .sdkmanrc
+          cache: maven
+      - name: Check style and lint
+        run: ./mvnw --batch-mode --no-transfer-progress validate
+      - name: Run tests
+        run: ./mvnw --batch-mode --no-transfer-progress test
