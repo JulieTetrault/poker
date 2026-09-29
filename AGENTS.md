@@ -2,9 +2,10 @@
 
 ## Project context
 
-This is a Java Spring Boot poker REST API. Business requirements have not yet
-been defined; do not invent poker rules or add infrastructure without a task
-requiring it. Preserve existing user changes.
+This is a Java Spring Boot poker REST API. Business requirements are defined in
+`docs/requirements.md`; proposed API decisions are in `docs/implementation-plan.md`.
+Do not treat unconfirmed proposals as requirements, invent poker rules, or add
+infrastructure without a task requiring it. Preserve existing user changes.
 
 ## Toolchain and checks
 

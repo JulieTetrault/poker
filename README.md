@@ -4,6 +4,20 @@ Simple Java Spring Boot REST API simulating a game of poker 🎴🃏♥️♦️
 The [development log](docs/development-log.md) records each step taken with Codex,
 including its goal, implementation decisions, and verification.
 
+## API planning and preview
+
+The [requirements](docs/requirements.md), [implementation plan](docs/implementation-plan.md),
+and [OpenAPI draft](docs/openapi.json) describe the planned card-shoe API.
+Business endpoints are not implemented yet. Preview the contract in Swagger UI:
+
+```sh
+python3 -m http.server 8000 --bind 127.0.0.1 --directory docs
+```
+
+Open <http://localhost:8000/index.html>. See the
+[manual testing guide](docs/manual-api-testing.md) for the optional stateless mock,
+example errors, and acceptance scenarios for the real API.
+
 ## Toolchain
 
 - Spring Boot 4.1.1
