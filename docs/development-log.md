@@ -309,3 +309,125 @@ Spotless version verification. The PR uses the repository template and targets
   The earlier cached validation did not emit it. This warning occurs with
   the latest Spotless release; it does not indicate an outdated plugin or
   fail the checks. No warning suppression was added.
+
+## Step 7: Plan the card-shoe API and document its contract
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer supplied `docs/requirements.md` and requested a criterion-by-
+criterion feature plan, endpoint/error design, and OpenAPI/Swagger documentation
+that can be used before endpoints exist. Codex preserved the requirements and
+created `docs/implementation-plan.md`, an OpenAPI 3.1.1 draft, a separate Swagger
+UI preview, and a manual testing guide. README links and preview commands were
+added; AGENTS.md now points to the requirements and distinguishes draft decisions.
+
+The plan covers 12 operations, a common Problem Details error catalogue, card
+conservation and concurrency, deterministic shuffle tests, and delivery slices.
+Partial dealing, physical deck ownership, player removal/discard behavior and
+other unspecified policies are explicitly proposed defaults pending review.
+Codex asked for clarification on the three primary rule choices; no reply had
+arrived when this draft was prepared. No game implementation or Maven dependency
+was added. Swagger UI is pinned to 5.33.0 and the optional stateless Prism mock to
+5.16.0. Future Spring Swagger integration is planned, not implemented.
+
+### Actual verification
+
+- OpenAPI validation passed with `openapi-spec-validator` 0.9.0 in a temporary
+  environment; 93 request/response examples passed JSON Schema validation.
+- Started the separate documentation server and fetched the Swagger HTML and
+  OpenAPI file over local HTTP. Browser rendering was not visually tested.
+- The initial Prism invocation failed with the active Node 22.7 runtime. Prism
+  requires Node >=24.18.0; an isolated temporary Node 24.18.0 invocation succeeded.
+  Both the prerequisite and temporary-runtime command are documented.
+- Exercised 69 success/error mock examples across all 12 operations, checking
+  expected status/body, CORS and empty 204 responses. These are stateless example
+  checks, not implementation tests. The name-validation message was subsequently
+  clarified and all 93 schema examples revalidated.
+- Checked local documentation links and the referenced upstream documentation;
+  `git diff --check` passed. Maven checks were not rerun because Java/build files
+  were unchanged. No endpoints, real game acceptance tests, or Spring Swagger
+  integration were claimed as implemented or tested.
+
+## Step 8: Simplify the implementation plan and align contract examples
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer supplied the domain model and revised API routes, requested a
+simpler implementation plan organized by development steps, and authorized
+correcting OpenAPI examples to match their schemas. Codex rewrote the plan into
+seven steps: domain classes, request/response DTOs, controllers, storage,
+services, centralized errors, and verification. It preserves all existing error
+codes and follows the domain's `Shoe`, `Hand`, card UUIDs, and derived rank values.
+
+Codex updated 87 OpenAPI response examples, including full game/deck payloads,
+card IDs, simplified errors, player arrays, suit counts, and deal payloads.
+Paths, schemas, methods, and statuses were preserved. Examples match the current
+schema references even where those references appear inconsistent with the
+operation's purpose. The plan records those gaps, malformed array item
+constraints, game-name input, 204 response content, and the error format for
+resolution before implementation. Unconfirmed business policies remain proposals.
+Existing user changes and other documentation were preserved; no Java, build,
+or infrastructure changes were made.
+
+### Actual verification
+
+- OpenAPI 3.1 validation passed using the existing temporary validation
+  environment (`openapi-spec-validator` 0.9.0).
+- All 91 request/response payload examples passed JSON Schema validation with
+  format checks. Array element constraints remain limited by the existing schemas.
+- Local Markdown links in README, AGENTS.md, the implementation plan, and the
+  manual testing guide resolve; `git diff --check` passed.
+- Maven checks, mock execution, and API behavior tests were not run: only
+  documentation and contract examples changed, and game endpoints are not implemented.
+
+## Step 9: Record confirmed API behavior and use the revised DTOs
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer confirmed partial/empty deals, cascading game deletion, discarded
+removed hands, exclusive deck/shoe ownership, UUID tie ordering, named game
+creation, and response behavior for deck/player additions. The developer also
+provided updated request/response schemas and requested endpoint examples
+matching them. Codex incorporated these decisions into the seven-step plan and
+updated the OpenAPI endpoint references and examples without changing the schema
+section. Game creation now accepts the required named request; add-deck returns
+204 without content; add-player uses 201 with its ID/name response. Deal examples
+include 13 requested with 10 available and an empty shoe, returning only the
+actual dealt and remaining counts. Per-face counts and player-card arrays now
+reference the dedicated response schemas. Confirmed policies are reflected in
+operation descriptions; storage and initial card order remain proposals.
+
+### Actual verification
+
+- OpenAPI 3.1 validation passed in the existing temporary validation environment.
+- All 97 request/response payload examples passed JSON Schema validation with
+  format checks, including the developer's corrected array element schemas.
+- Confirmed the complete schema section is unchanged from the start of this step.
+- Local documentation links resolve and `git diff --check` passed.
+- No Java/build changes: Maven checks and runtime API tests were not run.
+
+## Step 10: Prepare the planning documentation PR
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested staging all planning changes, a commit prefixed by
+`docs`, and a PR targeting `main`. Codex moved the changes from the previously
+merged boilerplate branch to `docs/api-planning`, based on the latest
+`origin/main`, and corrected the preview URLs to the existing `docs/index.html`.
+All existing planning changes are included.
+
+### Actual verification
+
+- Local Markdown file links resolve, the OpenAPI JSON parses, and
+  `git diff --check` passed.
+- The signed commit's repository pre-commit hook passed staged Maven
+  `validate`: Spotless passed and Checkstyle reported zero violations.
+- Maven `verify` was not rerun for these documentation-only changes.
