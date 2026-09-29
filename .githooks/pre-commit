@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+sh scripts/check-branch-name.sh
+
+# Validate exactly what will be committed, including partially staged files.
+# Exporting the index avoids changing the worktree or stashing user changes.
+snapshot=$(mktemp -d "${TMPDIR:-/tmp}/poker-pre-commit.XXXXXX")
+trap 'rm -rf "$snapshot"' EXIT
+trap 'exit 1' HUP INT TERM
+git checkout-index --all --prefix="$snapshot/"
+cd "$snapshot"
+
+if [ ! -f .sdkmanrc ] || [ ! -f mvnw ] || [ ! -f pom.xml ]; then
+  printf '%s\n' 'Stage .sdkmanrc, Maven Wrapper, and pom.xml before committing.' >&2
+  exit 1
+fi
+
+java_version=$(sed -n 's/^java=//p' .sdkmanrc | tr -d '\r')
+java_home="${SDKMAN_DIR:-$HOME/.sdkman}/candidates/java/$java_version"
+if [ -z "$java_version" ] || [ ! -x "$java_home/bin/java" ]; then
+  printf '%s\n' "Install the pinned SDK with 'sdk env install' before committing." >&2
+  exit 1
+fi
+export JAVA_HOME="$java_home"
+export PATH="$JAVA_HOME/bin:$PATH"
+
+printf '%s\n' 'Checking staged Java formatting and lint...'
+sh ./mvnw --batch-mode --no-transfer-progress validate
