@@ -32,7 +32,6 @@ The read/rehydration flow is:
 H2 database
 → JPA/Hibernate entity
 → Persistence mapper
-→ Domain factory rehydration
 → Aggregate root
 → Application service
 → Response mapper
@@ -76,10 +75,13 @@ than DTOs. DTOs are reserved for API transport models.
 
 ### 1. Create domain models and factories
 
-Create `Game`, `Shoe`, `Deck`, `Card`, `Player`, and `Hand`, plus `Suit` and
+Create `Game`, `Shoe`, `Deck`, `Card`, and `Player`, plus `Suit` and
 `Rank` enums, following the domain model.
 
 Domain classes contain business state and behavior only.
+
+`Game`, `Player`, and `Deck` are aggregate roots. `Shoe` remains a domain
+model inside Game so it can own shoe-specific behavior; it is not a root.
 
 Do not add:
 
@@ -94,16 +96,17 @@ to domain models.
 Core relationships:
 
 - A `Game` owns one `Shoe` and its players.
-- Each `Player` belongs to one game and owns one `Hand`.
-- Each `Shoe` belongs to one game.
+- Each `Player` belongs to one game and owns an ordered `List<Card> cards`.
+- Each `Shoe` belongs to one game and has no identifiers of its own.
 - A `Shoe` contains zero or more attached decks.
-- A new `Deck` contains 52 cards and has a null `shoeId` until attached.
+- A new `Deck` contains 52 cards and has a null `gameId` until attached.
 - Once attached, a deck cannot be removed from its shoe.
-- A `Card` has its own UUID and retains the `deckId` of its original deck.
+- A `Card` is an immutable value object containing only suit and rank.
+  It has no UUID or deck reference; lists preserve duplicate occurrences.
 - A card's numeric value is derived from `Rank.getValue()`.
-- A player's hand value is derived from the cards in `Hand`.
+- A player's hand value is derived from `Player.cards`.
 - Keep dealing, remaining-card counts, and shuffling in `Shoe`.
-- Keep hand totals and hand-related behavior in `Hand`.
+- Keep card receipt and hand-total calculations in `Player`.
 - Keep player ordering behavior associated with `Game`.
 - Track undealt cards independently from each deck's original 52-card
   collection.
@@ -116,9 +119,8 @@ identifiers internally.
 For example:
 
 ```java
-public Deck(UUID id, UUID shoeId, List<Card> cards) {
+public Deck(UUID id, List<Card> cards) {
     this.id = Objects.requireNonNull(id, "id");
-    this.shoeId = shoeId;
     this.cards = List.copyOf(cards);
 }
 ```
@@ -137,15 +139,17 @@ Identity generation belongs outside the aggregate.
 
 Create explicit factories for aggregate-root creation.
 
-At minimum:
+Create:
 
 ```text
 GameFactory
+PlayerFactory
 DeckFactory
 ```
 
-If `Player` is treated as independently created through the application layer,
-use a `PlayerFactory` as well.
+The aggregate roots are `Game`, `Player`, and `Deck`; use a creation factory
+for each. `Shoe` is an internal domain model owned by Game. It has no
+ShoeFactory, persistence entity, or repository. The Game constructor initializes it.
 
 Factories are responsible for:
 
@@ -168,23 +172,18 @@ public final class DeckFactory {
     public Deck create() {
         UUID deckId = idGenerator.nextId();
 
-        List<Card> cards = generateCards(deckId);
+        List<Card> cards = generateCards();
 
-        return new Deck(
-            deckId,
-            null,
-            cards
-        );
+        return new Deck(deckId, cards);
     }
 }
 ```
 
-The factory creates the deck ID and all 52 card IDs.
+The factory creates the deck ID and all 52 suit/rank card values.
 
 A `GameFactory` should create:
 
 - the game ID
-- the shoe ID
 - the initial empty shoe
 - the initial empty player collection
 
@@ -193,20 +192,8 @@ For example:
 ```java
 public Game create(String name) {
     UUID gameId = idGenerator.nextId();
-    UUID shoeId = idGenerator.nextId();
 
-    Shoe shoe = new Shoe(
-        shoeId,
-        gameId,
-        List.of()
-    );
-
-    return new Game(
-        gameId,
-        name,
-        shoe,
-        List.of()
-    );
+    return new Game(gameId, name);
 }
 ```
 
@@ -233,38 +220,35 @@ public final class UuidGenerator implements IdGenerator {
 This keeps UUID generation outside the aggregate and makes factories easy to
 test deterministically.
 
-### 2. Separate creation from rehydration
+### 2. Create persistence entities, mappers, and rehydration paths
+
+Implement the three entities and corresponding persistence mappers in this step.
+Cards are persistence values, not entities.
+Use `toEntity` for domain-to-entity mapping and `fromEntity` for entity-to-domain
+mapping. Keep aggregate creation separate from restoration.
+
+#### Separate creation from rehydration
 
 Loading an existing aggregate from persistence must not generate new IDs or
 apply "new object" initialization rules.
 
-Factories should therefore distinguish:
+Domain factories are responsible only for creating new aggregates. Do not add
+`rehydrate` or `restore` methods to factories.
 
-```text
-create(...)
-```
+Persistence mappers own rehydration through `fromEntity`. They instantiate
+domain models using persisted identifiers and restore child collections and
+relationships directly, without invoking factories or identity generators.
 
-from:
-
-```text
-rehydrate(...)
-```
-
-or:
-
-```text
-restore(...)
-```
-
-For example:
+For example, in `DeckEntityMapper`:
 
 ```java
-public Deck rehydrate(
-    UUID id,
-    UUID shoeId,
-    List<Card> cards
-) {
-    return new Deck(id, shoeId, cards);
+public Deck fromEntity(DeckEntity entity) {
+    Deck deck = new Deck(
+        entity.getId(),
+        entity.getCards().stream().map(cardEntityMapper::fromEntity).toList()
+    );
+    deck.setGameId(entity.getGameId());
+    return deck;
 }
 ```
 
@@ -277,8 +261,157 @@ Rehydration:
 - does not reset the shoe relationship
 - does not perform creation-only behavior
 
-Persistence mappers should use this rehydration path instead of calling a
-creation factory.
+Persistence mappers implement this rehydration path in `fromEntity`.
+
+#### Persistence entities
+
+Create a persistence representation separate from the domain model.
+
+Use JPA/Hibernate annotations only on persistence entities.
+
+Typical persistence entities:
+
+- `GameEntity`
+- `DeckEntity`
+- `PlayerEntity`
+
+These entities may contain persistence-specific details such as:
+
+- `@Entity`
+- `@Table`
+- `@Id`
+- `@OneToOne`
+- `@OneToMany`
+- `@ManyToOne`
+- cascade rules
+- fetch strategy
+- database column details
+
+Do not copy these annotations into domain classes.
+
+The persistence relationships should preserve the same ownership rules as the
+domain:
+
+```text
+GameEntity
+→ DeckEntity
+→ CardValue[] (JSON column)
+
+GameEntity
+→ PlayerEntity
+→ CardValue[] (JSON column)
+```
+
+Cards in a player's list contain suit/rank values only. Repeated faces remain
+separate list occurrences.
+
+When implementing dealing and shuffling in the domain-behavior step, extend
+the persistence representation to clearly distinguish:
+
+- undealt cards
+- cards currently held by players
+- discarded cards belonging to removed players
+
+The persistence representation does not need to mirror the domain object graph
+exactly as long as persistence mapping preserves domain invariants.
+
+#### Persistence mappers
+
+Create explicit mappers between domain models and persistence entities.
+Register entity mappers as Spring components with instance `toEntity` and
+`fromEntity` methods. Use constructor injection: DeckEntityMapper and
+PlayerEntityMapper depend on CardEntityMapper; GameEntityMapper depends on
+DeckEntityMapper and PlayerEntityMapper. Future repositories inject these mappers.
+
+Persistence mappers must not invoke aggregate creation logic.
+
+When reading from the database, `fromEntity` constructs domain models directly
+and restores persisted state. Factories are not involved.
+
+For example:
+
+```text
+DeckEntity
+→ DeckEntityMapper
+→ Deck
+```
+
+and:
+
+```text
+GameEntity
+→ GameEntityMapper
+→ Game
+```
+
+Examples:
+
+`GameEntityMapper`
+
+- `GameEntity toEntity(Game game)`
+- `Game fromEntity(GameEntity entity)`
+
+`DeckEntityMapper`
+
+- `DeckEntity toEntity(Deck deck)`
+- `Deck fromEntity(DeckEntity entity)`
+
+`PlayerEntityMapper`
+
+- `PlayerEntity toEntity(Player player)`
+- `Player fromEntity(PlayerEntity entity)`
+
+Keep mapping logic out of domain classes.
+
+The persistence write flow is:
+
+```text
+Domain model
+→ Persistence mapper
+→ Hibernate entity
+→ database
+```
+
+The persistence read flow is:
+
+```text
+Database
+→ Hibernate entity
+→ Persistence mapper
+→ Domain model
+```
+
+Avoid sharing persistence entities outside the persistence package.
+
+#### Current implementation scope
+
+Entities and mappers preserve the state currently exposed by the domain models:
+identifiers, names, deck attachment, original deck cards, player order, and hands.
+Player owns its cards directly; there is no Hand class or Hand entity/table.
+DeckEntity and PlayerEntity each store ordered
+card arrays in a `cards` column. `CardEntity` contains only suit and rank with no identity or deck reference. `CardListConverter` uses JPA `AttributeConverter`
+to encode the list as JSON text in that row; there is no Card entity/table or
+card join table. Array order and repeated values are preserved. Enums are
+encoded as names and derived numeric values are not stored. JPA does not define
+a portable native SQL array mapping for structured card values; this conversion
+keeps the array in the owning row without database-specific array types.
+
+Mapper `fromEntity` methods restore supplied state without generating IDs.
+CardValueMapper maps immutable values with `toValue` and `fromValue`.
+The mappings use scalar ownership IDs and unidirectional JPA associations to
+avoid recursive mapping. GameEntity stores ordered `decks` directly, not a
+ShoeEntity association. Shoe has no identifiers. GameEntityMapper restores it
+from the game entity's deck collection, and Deck.gameId records the owning game.
+Ordered entity collections use join tables, including `game_decks`.
+Standalone decks retain a nullable game ID. Removing a player deletes only its
+stored card array; the deck's original values remain unchanged.
+
+The current Shoe model does not expose undealt order or discarded state. Add
+that state and extend the persistence mappings alongside the domain-behavior
+step; it cannot yet be restored by these mappers. JPA API is a production
+dependency, with Hibernate and H2 used only in tests at this step. Runtime
+persistence configuration remains a later step. Map loaded collections while
+the persistence context is open; collection associations are lazy by default.
 
 ### 3. Create API DTOs and API mappers
 
@@ -342,128 +475,7 @@ positive deal counts.
 
 Reject unknown fields and incorrect JSON types rather than coercing them.
 
-### 4. Create persistence entities
-
-Create a persistence representation separate from the domain model.
-
-Use JPA/Hibernate annotations only on persistence entities.
-
-Typical persistence entities:
-
-- `GameEntity`
-- `ShoeEntity`
-- `DeckEntity`
-- `CardEntity`
-- `PlayerEntity`
-- `HandEntity`
-
-These entities may contain persistence-specific details such as:
-
-- `@Entity`
-- `@Table`
-- `@Id`
-- `@OneToOne`
-- `@OneToMany`
-- `@ManyToOne`
-- cascade rules
-- fetch strategy
-- database column details
-
-Do not copy these annotations into domain classes.
-
-The persistence relationships should preserve the same ownership rules as the
-domain:
-
-```text
-GameEntity
-→ ShoeEntity
-→ DeckEntity
-→ CardEntity
-
-GameEntity
-→ PlayerEntity
-→ HandEntity
-```
-
-Cards held in a player's hand still retain their original deck identity.
-
-Choose a persistence representation for card state that clearly distinguishes:
-
-- undealt cards
-- cards currently held by players
-- discarded cards belonging to removed players
-
-The persistence representation does not need to mirror the domain object graph
-exactly as long as persistence mapping preserves domain invariants.
-
-### 5. Create persistence mappers
-
-Create explicit mappers between domain models and persistence entities.
-
-Persistence mappers must not invoke aggregate creation logic.
-
-When reading from the database, they must use the appropriate domain factory's
-rehydration mechanism.
-
-For example:
-
-```text
-DeckEntity
-→ DeckPersistenceMapper
-→ DeckFactory.rehydrate(...)
-→ Deck
-```
-
-and:
-
-```text
-GameEntity
-→ GamePersistenceMapper
-→ GameFactory.rehydrate(...)
-→ Game
-```
-
-Examples:
-
-`GamePersistenceMapper`
-
-- `GameEntity toEntity(Game game)`
-- `Game toDomain(GameEntity entity)`
-
-`DeckPersistenceMapper`
-
-- `DeckEntity toEntity(Deck deck)`
-- `Deck toDomain(DeckEntity entity)`
-
-`PlayerPersistenceMapper`
-
-- `PlayerEntity toEntity(Player player)`
-- `Player toDomain(PlayerEntity entity)`
-
-Keep mapping logic out of domain classes.
-
-The persistence write flow is:
-
-```text
-Domain model
-→ Persistence mapper
-→ Hibernate entity
-→ database
-```
-
-The persistence read flow is:
-
-```text
-Database
-→ Hibernate entity
-→ Persistence mapper
-→ Domain factory rehydration
-→ Domain model
-```
-
-Avoid sharing persistence entities outside the persistence package.
-
-### 6. Create repository abstractions
+### 4. Create repository abstractions
 
 Define repository interfaces independently from Spring Data.
 
@@ -508,7 +520,7 @@ GameRepository
     ↑
 HibernateGameRepository
     ├── JpaGameRepository
-    └── GamePersistenceMapper
+    └── GameEntityMapper
 ```
 
 A persistence adapter should:
@@ -520,7 +532,7 @@ A persistence adapter should:
 
 Repository adapters do not create new aggregate identities.
 
-### 7. Configure H2 in-memory persistence
+### 5. Configure H2 in-memory persistence
 
 Use H2 as the local in-memory database with Hibernate/JPA.
 
@@ -538,7 +550,7 @@ not in domain classes.
 
 Do not write domain behavior into repository classes.
 
-### 8. Create application services
+### 6. Create application services
 
 Application services orchestrate:
 
@@ -583,7 +595,7 @@ behavior, and persist modified aggregates.
 
 Use transactions for operations involving multiple persistent changes.
 
-### 9. Create controllers
+### 7. Create controllers
 
 Create game, deck, and player controllers using the routes below.
 
@@ -623,7 +635,7 @@ All paths below begin with `/api/v1`.
 Adding a deck succeeds with `204 No Content`; no attachment response DTO is
 required.
 
-### 10. Implement domain behavior
+### 8. Implement domain behavior
 
 Implement:
 
@@ -706,9 +718,9 @@ Shuffle only undealt cards and preserve:
 - cards already held in hands
 - discarded cards
 - card counts
-- physical card identity
+- suit/rank values and occurrence counts
 
-### 11. Add centralized error handling
+### 9. Add centralized error handling
 
 Use a centralized REST exception handler.
 
@@ -740,7 +752,7 @@ Do not expose:
 
 Clients should use `status` and `code` rather than parsing `detail`.
 
-### 12. Test and verify
+### 10. Test and verify
 
 Use JUnit Jupiter and AssertJ for domain and service tests.
 
@@ -761,9 +773,9 @@ Verify:
 - IDs are generated by `IdGenerator`, not the aggregate
 - `GameFactory` creates a game and shoe with the correct relationship
 - `DeckFactory` creates exactly 52 cards
-- all generated card IDs are unique
-- every card receives the correct original `deckId`
-- a newly created deck has a null `shoeId`
+- all 52 card faces are distinct within a deck
+- cards contain suit/rank values without identifiers
+- a newly created deck has a null `gameId`
 - deterministic test ID generators can be substituted
 
 For example, tests should be able to provide a predictable generator rather
@@ -790,23 +802,28 @@ Verify:
 - deck attachment invariants
 - Fisher–Yates preserves every card
 - dealing removes cards only from the undealt shoe
-- dealt cards retain original `deckId`
+- dealing preserves card values and their occurrence counts
 - removing a player discards their hand
 - discarded cards never return to the shoe
 
 #### Persistence tests
+
+Keep entity tests in separate `GameEntityTest`, `DeckEntityTest`, and
+`PlayerEntityTest` files.
+Test card-array conversion separately in `CardListConverterTest`.
+Name mapper tests after their `*EntityMapper` class.
 
 Using H2, verify:
 
 - domain aggregates round-trip through persistence without changing IDs
 - persistence mappers rehydrate rather than recreate aggregates
 - relationships are persisted correctly
-- unassigned decks retain a null `shoeId`
+- unassigned decks retain a null `gameId`
 - attaching a deck persists ownership
 - a deck cannot be attached to multiple shoes
 - deleting a game cascades only to resources owned by that game
 
-### 13. Build and verification workflow
+### 11. Build and verification workflow
 
 After Java changes:
 
@@ -835,7 +852,7 @@ aligned with implemented behavior.
 - Aggregate roots do not generate their own UUIDs.
 - Aggregate roots are created through explicit domain factories.
 - UUID generation is abstracted behind an `IdGenerator`.
-- Creation and persistence rehydration are separate factory operations.
+- Factories create new aggregates; persistence mappers own rehydration through `fromEntity`.
 - Rehydration preserves existing identities and state.
 - API mappers do not instantiate aggregate roots directly.
 - Persistence mappers do not invoke new-aggregate creation logic.
@@ -846,8 +863,8 @@ aligned with implemented behavior.
   layer.
 - H2 is used as the in-memory local database.
 - Card value is derived from `Rank`; it is not stored on `Card`.
-- Hand value is derived from `Hand`; it is not stored on `Player`.
-- Cards retain their original deck identity after being dealt.
+- Hand value is derived from `Player.cards`; it is not persisted.
+- Cards contain suit/rank only; ordered collections preserve duplicate faces.
 - Removing a player discards their cards without returning them to the shoe.
 - A deck belongs to only one shoe at a time.
 - A shoe belongs to exactly one game.

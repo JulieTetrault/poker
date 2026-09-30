@@ -6,7 +6,6 @@ import com.example.poker.domain.model.Rank;
 import com.example.poker.domain.model.Suit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public final class DeckFactory {
     private final IdGenerator idGenerator;
@@ -16,20 +15,17 @@ public final class DeckFactory {
     }
 
     public Deck create() {
-        UUID id = idGenerator.nextId();
-        List<Card> cards = generateCards(id);
-        return new Deck(id, cards);
+        List<Card> cards = generateCards();
+        return new Deck(idGenerator.nextId(), cards);
     }
 
-    private List<Card> generateCards(UUID deckId) {
+    private List<Card> generateCards() {
         List<Card> cards = new ArrayList<>();
-
         for (Suit suit : Suit.values()) {
             for (Rank rank : Rank.values()) {
-                cards.add(new Card(UUID.randomUUID(), deckId, suit, rank));
+                cards.add(new Card(suit, rank));
             }
         }
-
         return cards;
     }
 }

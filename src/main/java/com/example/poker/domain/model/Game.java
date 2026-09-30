@@ -1,7 +1,7 @@
 package com.example.poker.domain.model;
 
 import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,12 +10,17 @@ public final class Game {
     private final UUID id;
     private final String name;
     private final Shoe shoe;
-    private final Map<UUID, Player> players = new LinkedHashMap<>();
+    private final Map<UUID, Player> players;
 
-    public Game(UUID id, String name, Shoe shoe) {
+    public Game(UUID id, String name) {
+        this(id, name, new Shoe(), new HashMap<>());
+    }
+
+    public Game(UUID id, String name, Shoe shoe, Map<UUID, Player> players) {
         this.id = id;
         this.name = name;
         this.shoe = shoe;
+        this.players = players;
     }
 
     public UUID getId() {

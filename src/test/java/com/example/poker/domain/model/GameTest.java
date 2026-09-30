@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.poker.fixture.CardFixture;
 import com.example.poker.fixture.PlayerFixture;
-import com.example.poker.fixture.ShoeFixture;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,6 @@ class GameTest {
                     .withName("Bob")
                     .withCards(LOWEST_CARDS)
                     .build();
-    private static final Shoe SOME_SHOE = new ShoeFixture().withGameId(SOME_GAME_ID).build();
 
     @Test
     void givenEmptyGame__whenAddingPlayer__thenPlayerIsIncluded() {
@@ -71,6 +69,6 @@ class GameTest {
     }
 
     private static Game game() {
-        return new Game(SOME_GAME_ID, SOME_GAME_NAME, SOME_SHOE);
+        return new Game(SOME_GAME_ID, SOME_GAME_NAME);
     }
 }
