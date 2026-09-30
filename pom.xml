@@ -15,6 +15,7 @@
 	<description>Poker REST API</description>
 	<properties>
 		<java.version>26</java.version>
+		<javafaker.version>1.0.2</javafaker.version>
 		<spotless.version>3.10.3</spotless.version>
 		<google-java-format.version>1.36.1</google-java-format.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
@@ -31,6 +32,13 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>com.github.javafaker</groupId>
+			<artifactId>javafaker</artifactId>
+			<version>${javafaker.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -43,6 +51,7 @@
 					<java>
 						<googleJavaFormat>
 							<version>${google-java-format.version}</version>
+							<style>AOSP</style>
 						</googleJavaFormat>
 					</java>
 				</configuration>

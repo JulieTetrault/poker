@@ -45,6 +45,13 @@ Keep private keys and passphrases outside the repository.
 
 ## Pull requests and documentation
 
+Organize unit tests by the class under test, such as `HandTest`. Name test
+methods using `givenCondition__whenAction__thenExpectedResult` to describe
+the setup, action, and expected behavior. The `givenCondition__` prefix is optional;
+use `whenAction__thenExpectedResult` when no setup needs describing.
+Separate each test body with `// GIVEN`, `// WHEN`, and `// THEN` comments:
+setup first, the action under test second, and assertions last.
+
 Use the PR template to explain the change, checks, and AI assistance. Update
 the README when commands or setup change, and record development steps and
 their goals in [the development log](docs/development-log.md).
