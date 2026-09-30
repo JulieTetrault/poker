@@ -41,14 +41,9 @@ class GameEntityMapperTest {
                     .withPlayers(List.of(SOME_PLAYER))
                     .build();
     private static final GameEntity SOME_GAME_ENTITY =
-            new GameEntityFixture()
-                    .withDecks(List.of(SOME_DECK_ENTITY))
-                    .withPlayers(List.of(SOME_PLAYER_ENTITY))
-                    .build();
+            new GameEntityFixture().withPlayers(List.of(SOME_PLAYER_ENTITY)).build();
 
     @Spy private CardEntityMapper cardEntityMapper = new CardEntityMapper();
-
-    @Mock private DeckEntityMapper deckEntityMapper;
 
     @Mock private PlayerEntityMapper playerEntityMapper;
 
@@ -56,8 +51,6 @@ class GameEntityMapperTest {
 
     @Test
     void givenGame__whenMappingToEntity__thenReturnGameEntity() {
-        given(deckEntityMapper.toEntity(eq(SOME_DECK), any(GameEntity.class)))
-                .willReturn(SOME_DECK_ENTITY);
         given(playerEntityMapper.toEntity(eq(SOME_PLAYER), any(GameEntity.class)))
                 .willReturn(SOME_PLAYER_ENTITY);
 
@@ -66,7 +59,6 @@ class GameEntityMapperTest {
         assertThat(gameEntity).isInstanceOf(GameEntity.class);
         assertThat(gameEntity.getId()).isEqualTo(SOME_GAME.getId());
         assertThat(gameEntity.getName()).isEqualTo(SOME_GAME.getName());
-        assertThat(gameEntity.getDecks()).containsExactly(SOME_DECK_ENTITY);
         assertThat(gameEntity.getPlayers()).containsExactly(SOME_PLAYER_ENTITY);
         assertThat(gameEntity.getUndealtCards())
                 .containsExactlyElementsOf(
@@ -77,7 +69,6 @@ class GameEntityMapperTest {
 
     @Test
     void givenGameEntity__whenMappingFromEntity__thenReturnGame() {
-        given(deckEntityMapper.fromEntity(SOME_DECK_ENTITY)).willReturn(SOME_DECK);
         given(playerEntityMapper.fromEntity(SOME_PLAYER_ENTITY)).willReturn(SOME_PLAYER);
 
         Game game = gameEntityMapper.fromEntity(SOME_GAME_ENTITY);
@@ -85,7 +76,6 @@ class GameEntityMapperTest {
         assertThat(game).isInstanceOf(Game.class);
         assertThat(game.getId()).isEqualTo(SOME_GAME_ENTITY.getId());
         assertThat(game.getName()).isEqualTo(SOME_GAME_ENTITY.getName());
-        assertThat(game.getShoe().getDecks()).containsExactly(SOME_DECK);
         assertThat(game.getPlayers()).containsExactly(SOME_PLAYER);
     }
 
@@ -94,16 +84,14 @@ class GameEntityMapperTest {
             givenPartiallyDealtGameDeck__whenMappingBothWays__thenPreserveRemainingOrderAndDuplicates() {
         // GIVEN
         CardEntityMapper cards = new CardEntityMapper();
-        GameEntityMapper mapper =
-                new GameEntityMapper(
-                        new DeckEntityMapper(cards), new PlayerEntityMapper(cards), cards);
+        GameEntityMapper mapper = new GameEntityMapper(new PlayerEntityMapper(cards), cards);
         Card first = new CardFixture().build();
         Card second = new CardFixture().build();
         Game original =
                 new Game(
                         SOME_GAME.getId(),
                         SOME_GAME.getName(),
-                        new Shoe(List.of(SOME_DECK), List.of(second, first, second)),
+                        new Shoe(List.of(second, first, second)),
                         Map.of());
         // WHEN
         Game restored = mapper.fromEntity(mapper.toEntity(original));
@@ -117,19 +105,12 @@ class GameEntityMapperTest {
     void givenExhaustedGameDeck__whenMappingBothWays__thenDoNotReplenishFromDeck() {
         // GIVEN
         CardEntityMapper cards = new CardEntityMapper();
-        GameEntityMapper mapper =
-                new GameEntityMapper(
-                        new DeckEntityMapper(cards), new PlayerEntityMapper(cards), cards);
+        GameEntityMapper mapper = new GameEntityMapper(new PlayerEntityMapper(cards), cards);
         Game original =
-                new Game(
-                        SOME_GAME.getId(),
-                        SOME_GAME.getName(),
-                        new Shoe(List.of(SOME_DECK), List.of()),
-                        Map.of());
+                new Game(SOME_GAME.getId(), SOME_GAME.getName(), new Shoe(List.of()), Map.of());
         // WHEN
         Game restored = mapper.fromEntity(mapper.toEntity(original));
         // THEN
-        assertThat(restored.getShoe().getDecks()).hasSize(1);
         assertThat(restored.dealCards(1, new PlayerFixture().build())).isEmpty();
     }
 }

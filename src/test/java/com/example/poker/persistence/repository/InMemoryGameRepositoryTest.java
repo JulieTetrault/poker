@@ -28,6 +28,7 @@ class InMemoryGameRepositoryTest {
     private static final GameEntity SOME_PERSISTED_GAME_ENTITY = new GameEntityFixture().build();
 
     @Mock private JPAGameRepository gameRepository;
+    @Mock private JPADeckRepository deckRepository;
 
     @Mock private GameEntityMapper gameEntityMapper;
 
@@ -80,6 +81,7 @@ class InMemoryGameRepositoryTest {
 
         inMemoryGameRepository.deleteById(SOME_GAME.getId());
 
+        verify(deckRepository).deleteByGameId(SOME_GAME.getId());
         verify(gameRepository).delete(SOME_GAME_ENTITY);
         verify(gameRepository).findById(SOME_GAME.getId());
         verifyNoMoreInteractions(gameRepository);

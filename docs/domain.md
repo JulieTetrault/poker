@@ -45,7 +45,6 @@ classDiagram
 
     class Shoe {
         <<domain model>>
-        +Deck[] decks
         +Card[] cards
         +void addDeck(Deck deck)
         +Card[] dealCards(int count)
@@ -102,7 +101,6 @@ classDiagram
     Shoe --> CardShuffler : delegates
     Game "1" *-- "0..*" Player : players
 
-    Shoe "1" o-- "0..*" Deck : decks
     Deck "1" *-- "52" Card : cards
 
     Player "1" o-- "0..*" Card : cards
@@ -118,11 +116,14 @@ classDiagram
 
 The aggregate roots are `Game`, `Player`, and `Deck`.
 
-Game owns players and one Shoe. Shoe owns the attached decks and ordered undealt
+Game owns players and one Shoe. Shoe owns the ordered undealt
 card occurrences, delegating to CardDealer, CardCounter, and CardShuffler. It has
 no separate identity, factory, repository, or persistence entity. GameEntity
-persists the decks relationship and undealt list directly; its mapper restores
-Shoe from that state. Deck.gameId records attachment to the game.
+persists the undealt list directly; its mapper restores Shoe from that state.
+Deck rows store only identity and attachment through game_id. DeckFactory
+reconstructs the standard 52 cards using the persisted identity, without generating
+a new ID. Attachment is saved separately within the game service transaction.
+Deleting a game explicitly deletes its attached deck records.
 
 ## Domain Notes
 
@@ -132,8 +133,8 @@ Shoe from that state. Deck.gameId records attachment to the game.
 - A newly created deck may have a null `gameId` until it is added to a game.
 - `Card` is an immutable value object containing only `suit` and `rank`, with no identity or deck reference.
 - Cards with the same suit/rank compare as equal values. Ordered card lists retain separate occurrences, including duplicate faces from multiple decks.
-- Card values are stored as ordered JSON arrays in deck and player rows, and
-  the game row stores its ordered undealt cards; there is no Card table.
+- Card values are stored as ordered JSON arrays in player rows and in the
+  game row for undealt cards; deck rows do not store cards. There is no Card table.
 - Shoe tracks undealt cards independently of the original deck cards. Adding a
   deck appends its cards; dealing removes the next available occurrences.
   Removing players never returns dealt cards to the undealt list.
@@ -161,7 +162,7 @@ Shoe delegates addCards, removeCards, getCardsCount, and getSuitCardsCount to it
 Suit counts are returned as an immutable Map<Suit, Integer> snapshot containing
 every suit, including zero counts; response mappers own the DTO representation.
 
-Shoe stores attached decks and the undealt list; CardCounter stores the nested map:
+Shoe stores the undealt list; CardCounter stores the nested map:
 
 ```java
 List<Card> cards; // backed by ArrayList; last entry is next to deal
@@ -240,7 +241,7 @@ of counting and is supplied to Shoe.
 
 Game creates an empty Shoe or accepts restored Shoe and player state. Its mapper
 only maps persistent values and does not configure card services. Shoe has three
-constructors: empty state, restoration from decks and undealt cards, and full
+constructors: empty state, restoration from undealt cards, and full
 collaborator injection. Defaults create a fresh per-shoe counter and instance
 dealer/shuffler. GameTest mocks Shoe; ShoeTest mocks the three card collaborators.
 Domain services have no Spring bean wiring or annotations.

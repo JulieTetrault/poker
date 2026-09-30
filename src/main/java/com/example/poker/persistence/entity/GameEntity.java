@@ -21,9 +21,6 @@ public class GameEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
-    private List<DeckEntity> decks = new ArrayList<>();
-
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlayerEntity> players = new ArrayList<>();
 
@@ -52,16 +49,8 @@ public class GameEntity {
         return name;
     }
 
-    public List<DeckEntity> getDecks() {
-        return decks;
-    }
-
     public List<PlayerEntity> getPlayers() {
         return players;
-    }
-
-    public void addDeck(DeckEntity deck) {
-        decks.add(deck);
     }
 
     public void addPlayer(PlayerEntity player) {

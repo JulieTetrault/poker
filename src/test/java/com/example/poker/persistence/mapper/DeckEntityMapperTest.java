@@ -27,32 +27,35 @@ class DeckEntityMapperTest {
     private static final CardEntity SOME_CARD_ENTITY = new CardEntityFixture().build();
     private static final Deck SOME_DECK = new DeckFixture().withCards(List.of(SOME_CARD)).build();
     private static final DeckEntity SOME_DECK_ENTITY =
-            new DeckEntityFixture().withGame(null).withCards(List.of(SOME_CARD_ENTITY)).build();
+            new DeckEntityFixture().withGame(null).build();
     private static final DeckEntity SOME_DECK_ENTITY_ATTACHED_TO_GAME =
-            new DeckEntityFixture()
-                    .withGame(SOME_GAME_ENTITY)
-                    .withCards(List.of(SOME_CARD_ENTITY))
-                    .build();
+            new DeckEntityFixture().withGame(SOME_GAME_ENTITY).build();
 
-    @Mock private CardEntityMapper cardEntityMapper;
+    @Mock private com.example.poker.domain.factory.DeckFactory deckFactory;
 
     @InjectMocks private DeckEntityMapper deckEntityMapper;
 
     @Test
     void givenDeckAttachedToGame__whenMappingToEntity__thenReturnDeckEntityAttachedToGame() {
-        given(cardEntityMapper.toEntity(SOME_CARD)).willReturn(SOME_CARD_ENTITY);
 
         DeckEntity deckEntity = deckEntityMapper.toEntity(SOME_DECK, SOME_GAME_ENTITY);
 
         assertThat(deckEntity).isInstanceOf(DeckEntity.class);
         assertThat(deckEntity.getId()).isEqualTo(SOME_DECK.getId());
         assertThat(deckEntity.getGame()).isEqualTo(SOME_GAME_ENTITY);
-        assertThat(deckEntity.getCards()).containsExactly(SOME_CARD_ENTITY);
     }
 
     @Test
     void givenDeckEntityAttachedToGame__whenMappingFromEntity__thenReturnDeckAttachedToGame() {
-        given(cardEntityMapper.fromEntity(SOME_CARD_ENTITY)).willReturn(SOME_CARD);
+        given(
+                        deckFactory.create(
+                                SOME_DECK_ENTITY_ATTACHED_TO_GAME.getId(),
+                                SOME_GAME_ENTITY.getId()))
+                .willReturn(
+                        new Deck(
+                                SOME_DECK_ENTITY_ATTACHED_TO_GAME.getId(),
+                                SOME_GAME_ENTITY.getId(),
+                                List.of(SOME_CARD)));
 
         Deck deck = deckEntityMapper.fromEntity(SOME_DECK_ENTITY_ATTACHED_TO_GAME);
 
@@ -64,20 +67,19 @@ class DeckEntityMapperTest {
 
     @Test
     void givenDeckNotAttachedToGame__whenMappingToEntity__thenReturnDeckEntityNotAttachedToGame() {
-        given(cardEntityMapper.toEntity(SOME_CARD)).willReturn(SOME_CARD_ENTITY);
 
         DeckEntity deckEntity = deckEntityMapper.toEntity(SOME_DECK);
 
         assertThat(deckEntity).isInstanceOf(DeckEntity.class);
         assertThat(deckEntity.getId()).isEqualTo(SOME_DECK.getId());
         assertThat(deckEntity.getGame()).isNull();
-        assertThat(deckEntity.getCards()).containsExactly(SOME_CARD_ENTITY);
     }
 
     @Test
     void
             givenDeckEntityNotAttachedToGame__whenMappingFromEntity__thenReturnDeckNotAttachedToGame() {
-        given(cardEntityMapper.fromEntity(SOME_CARD_ENTITY)).willReturn(SOME_CARD);
+        given(deckFactory.create(SOME_DECK_ENTITY.getId(), null))
+                .willReturn(new Deck(SOME_DECK_ENTITY.getId(), List.of(SOME_CARD)));
 
         Deck deck = deckEntityMapper.fromEntity(SOME_DECK_ENTITY);
 

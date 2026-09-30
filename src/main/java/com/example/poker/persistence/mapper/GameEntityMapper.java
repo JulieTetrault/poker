@@ -11,15 +11,11 @@ import org.springframework.stereotype.Component;
 @Component
 public final class GameEntityMapper {
     private final CardEntityMapper cardEntityMapper;
-    private final DeckEntityMapper deckEntityMapper;
     private final PlayerEntityMapper playerEntityMapper;
 
     public GameEntityMapper(
-            DeckEntityMapper deckEntityMapper,
-            PlayerEntityMapper playerEntityMapper,
-            CardEntityMapper cardEntityMapper) {
+            PlayerEntityMapper playerEntityMapper, CardEntityMapper cardEntityMapper) {
         this.cardEntityMapper = cardEntityMapper;
-        this.deckEntityMapper = deckEntityMapper;
         this.playerEntityMapper = playerEntityMapper;
     }
 
@@ -31,10 +27,6 @@ public final class GameEntityMapper {
                         game.getShoe().getCards().stream()
                                 .map(cardEntityMapper::toEntity)
                                 .toList());
-
-        game.getShoe().getDecks().stream()
-                .map(deck -> deckEntityMapper.toEntity(deck, gameEntity))
-                .forEach(gameEntity::addDeck);
 
         game.getPlayers().stream()
                 .map(player -> playerEntityMapper.toEntity(player, gameEntity))
@@ -48,7 +40,6 @@ public final class GameEntityMapper {
                 entity.getId(),
                 entity.getName(),
                 new Shoe(
-                        entity.getDecks().stream().map(deckEntityMapper::fromEntity).toList(),
                         entity.getUndealtCards().stream()
                                 .map(cardEntityMapper::fromEntity)
                                 .toList()),

@@ -8,7 +8,6 @@ import com.example.poker.domain.model.Deck;
 import com.example.poker.domain.model.Rank;
 import com.example.poker.domain.model.Suit;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,9 +25,17 @@ class DeckFactoryTest {
 
     @InjectMocks private DeckFactory deckFactory;
 
-    @BeforeEach
-    void setUp() {
-        given(idGenerator.nextId()).willReturn(SOME_DECK_ID);
+    @Test
+    void givenPersistedIdentity__whenReconstructing__thenKeepIdentityAndGenerateStandardCards() {
+        // GIVEN
+        UUID gameId = UUID.randomUUID();
+        // WHEN
+        Deck deck = deckFactory.create(SOME_DECK_ID, gameId);
+        // THEN
+        assertThat(deck.getId()).isEqualTo(SOME_DECK_ID);
+        assertThat(deck.getGameId()).isEqualTo(gameId);
+        assertThat(deck.getCards()).hasSize(52).doesNotHaveDuplicates();
+        org.mockito.Mockito.verifyNoInteractions(idGenerator);
     }
 
     @Nested
@@ -36,6 +43,7 @@ class DeckFactoryTest {
     class Creation {
         @Test
         void whenCreating__thenDeckHasGeneratedIdentityAndAllFiftyTwoCards() {
+            given(idGenerator.nextId()).willReturn(SOME_DECK_ID);
             Deck deck = deckFactory.create();
 
             assertThat(deck.getId()).isEqualTo(SOME_DECK_ID);

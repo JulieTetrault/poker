@@ -103,9 +103,7 @@ tests for business logic, `@ExtendWith(MockitoExtension.class)` when mocks are
 needed, and AssertJ for assertions. Use `@WebMvcTest` for controller slices and
 `@SpringBootTest` for checks requiring the application context.
 
-The current `PokerApplicationTests` is a context smoke test. Business unit tests
-will accompany the poker implementation. Test reports are written to
-`target/surefire-reports/`.
+Test reports are written to `target/surefire-reports/`.
 
 ## Continuous integration
 

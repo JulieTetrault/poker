@@ -8,27 +8,24 @@ import java.util.List;
 import java.util.Map;
 
 public final class Shoe {
-    private final List<Deck> decks;
     private final List<Card> cards;
     private final CardShuffler cardShuffler;
     private final CardCounter cardCounter;
     private final CardDealer cardDealer;
 
     public Shoe() {
-        this(List.of(), List.of());
+        this(List.of());
     }
 
-    public Shoe(List<Deck> decks, List<Card> cards) {
-        this(decks, cards, new CardShuffler(), new CardCounter(), new CardDealer());
+    public Shoe(List<Card> cards) {
+        this(cards, new CardShuffler(), new CardCounter(), new CardDealer());
     }
 
     public Shoe(
-            List<Deck> decks,
             List<Card> cards,
             CardShuffler cardShuffler,
             CardCounter cardCounter,
             CardDealer cardDealer) {
-        this.decks = new ArrayList<>(decks);
         this.cards = new ArrayList<>(cards);
         this.cardShuffler = cardShuffler;
         this.cardCounter = cardCounter;
@@ -36,16 +33,11 @@ public final class Shoe {
         cardCounter.addCards(this.cards);
     }
 
-    public List<Deck> getDecks() {
-        return List.copyOf(decks);
-    }
-
     public List<Card> getCards() {
         return List.copyOf(cards);
     }
 
     public void addDeck(Deck deck) {
-        decks.add(deck);
         cards.addAll(deck.getCards());
         cardCounter.addCards(deck.getCards());
     }

@@ -2460,3 +2460,32 @@ and implementation plan while retaining historical development entries.
   of separate combined game-card tests, which were not reintroduced.
 - Local documentation link targets and git diff --check passed.
 - No commit or push was performed.
+
+## Step 78 — Persist deck identity and ownership without duplicated cards
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer approved removing the game/shoe deck collections and stored deck
+cards now that GameEntity stores undealt_cards. Codex removed those collections
+and DeckEntity.cards. Deck rows retain ID and game ownership to prevent repeat
+attachment. DeckFactory's explicit-ID overload reconstructs standard cards without
+calling IdGenerator; GameEntityMapper restores only saved remaining cards.
+DeckService now saves attachment within the existing GameService transaction.
+InMemoryGameRepository explicitly deletes attached decks before deleting a game,
+preserving deletion behavior and retaining unattached decks.
+
+Updated domain and implementation documentation, fixtures, mapper/entity tests,
+and factory coverage. Added dedicated Spring/H2 persistence tests for reload,
+repeat attachment rejection, exhausted games receiving new decks, and deletion
+of owned records. Preserved concurrent developer edits removing
+PokerApplicationTests and updating README; lifecycle coverage uses its own class.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Final spotless:apply, validate, and verify passed; all 75 tests passed with no
+  failures, errors, or skips.
+- Changed documentation link targets exist and git diff --check passed.
+- No commit or push was performed for this step.

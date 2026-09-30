@@ -1,5 +1,6 @@
 package com.example.poker.persistence.mapper;
 
+import com.example.poker.domain.factory.DeckFactory;
 import com.example.poker.domain.model.Deck;
 import com.example.poker.persistence.entity.DeckEntity;
 import com.example.poker.persistence.entity.GameEntity;
@@ -7,10 +8,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public final class DeckEntityMapper {
-    private final CardEntityMapper cardEntityMapper;
+    private final DeckFactory deckFactory;
 
-    public DeckEntityMapper(CardEntityMapper cardEntityMapper) {
-        this.cardEntityMapper = cardEntityMapper;
+    public DeckEntityMapper(DeckFactory deckFactory) {
+        this.deckFactory = deckFactory;
     }
 
     public DeckEntity toEntity(Deck deck) {
@@ -18,16 +19,11 @@ public final class DeckEntityMapper {
     }
 
     public DeckEntity toEntity(Deck deck, GameEntity gameEntity) {
-        return new DeckEntity(
-                deck.getId(),
-                gameEntity,
-                deck.getCards().stream().map(cardEntityMapper::toEntity).toList());
+        return new DeckEntity(deck.getId(), gameEntity);
     }
 
     public Deck fromEntity(DeckEntity entity) {
-        return new Deck(
-                entity.getId(),
-                entity.getGame() == null ? null : entity.getGame().getId(),
-                entity.getCards().stream().map(cardEntityMapper::fromEntity).toList());
+        return deckFactory.create(
+                entity.getId(), entity.getGame() == null ? null : entity.getGame().getId());
     }
 }

@@ -30,11 +30,10 @@ class ShoeTest {
         Card card = new CardFixture().build();
         Deck deck = new DeckFixture().build();
         // WHEN
-        Shoe shoe = new Shoe(List.of(), List.of(card), cardShuffler, cardCounter, cardDealer);
+        Shoe shoe = new Shoe(List.of(card), cardShuffler, cardCounter, cardDealer);
         verify(cardCounter).addCards(List.of(card));
         shoe.addDeck(deck);
         // THEN
-        assertThat(shoe.getDecks()).containsExactly(deck);
         assertThat(shoe.getCards())
                 .containsExactlyElementsOf(
                         java.util.stream.Stream.concat(
@@ -48,7 +47,7 @@ class ShoeTest {
     void givenCards__whenDealing__thenDelegateToDealerAndUpdateCounter() {
         // GIVEN
         Card card = new CardFixture().build();
-        Shoe shoe = new Shoe(List.of(), List.of(card), cardShuffler, cardCounter, cardDealer);
+        Shoe shoe = new Shoe(List.of(card), cardShuffler, cardCounter, cardDealer);
         List<Card> dealt = List.of(card);
         given(cardDealer.dealCards(List.of(card), 1)).willReturn(dealt);
         // WHEN
@@ -64,7 +63,7 @@ class ShoeTest {
     void givenCards__whenShuffling__thenDelegateWithoutChangingCounts() {
         // GIVEN
         Card card = new CardFixture().build();
-        Shoe shoe = new Shoe(List.of(), List.of(card), cardShuffler, cardCounter, cardDealer);
+        Shoe shoe = new Shoe(List.of(card), cardShuffler, cardCounter, cardDealer);
         // WHEN
         shoe.shuffle();
         // THEN
@@ -77,7 +76,7 @@ class ShoeTest {
     @Test
     void givenCounterSnapshots__whenCounting__thenReturnCounterResults() {
         // GIVEN
-        Shoe shoe = new Shoe(List.of(), List.of(), cardShuffler, cardCounter, cardDealer);
+        Shoe shoe = new Shoe(List.of(), cardShuffler, cardCounter, cardDealer);
         Map<Suit, Integer> suits = Map.of(Suit.HEARTS, 2);
         Map<Suit, Map<Rank, Integer>> faces = Map.of(Suit.HEARTS, Map.of(Rank.KING, 2));
         given(cardCounter.getSuitCardsCount()).willReturn(suits);

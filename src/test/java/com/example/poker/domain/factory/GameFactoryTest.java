@@ -40,7 +40,7 @@ class GameFactoryTest {
 
             assertThat(game.getId()).isEqualTo(SOME_GAME_ID);
             assertThat(game.getName()).isEqualTo(SOME_GAME_NAME);
-            assertThat(game.getShoe().getDecks()).isEmpty();
+            assertThat(game.getShoe().getCards()).isEmpty();
             assertThat(game.getPlayers()).isEmpty();
             verify(idGenerator).nextId();
             verifyNoMoreInteractions(idGenerator);

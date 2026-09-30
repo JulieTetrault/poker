@@ -80,7 +80,7 @@ Create `Game`, `Shoe`, `Deck`, `Card`, and `Player`, plus `Suit` and
 Domain classes contain business state and behavior only.
 
 `Game`, `Player`, and `Deck` are aggregate roots. Game owns one Shoe, which keeps
-attached decks and undealt cards and delegates to CardDealer, CardCounter, and
+undealt cards and delegates to CardDealer, CardCounter, and
 CardShuffler. Shoe is a domain model without an independent identity.
 
 Do not add:
@@ -95,7 +95,7 @@ to domain models.
 
 Core relationships:
 
-- A `Game` owns its shoe and players; Shoe owns attached decks and undealt cards.
+- A `Game` owns its shoe and players; Shoe owns undealt cards.
 - Each `Player` belongs to one game and owns an ordered `List<Card> cards`.
 - A new `Deck` contains 52 cards and has a null `gameId` until attached.
 - Once attached, a deck cannot be removed from its game.
@@ -232,34 +232,14 @@ mapping. Keep aggregate creation separate from restoration.
 Loading an existing aggregate from persistence must not generate new IDs or
 apply "new object" initialization rules.
 
-Domain factories are responsible only for creating new aggregates. Do not add
-`rehydrate` or `restore` methods to factories.
+Persistence mappers restore game and player state using persisted identifiers and
+ordered card lists. Deck rows store only ID and game attachment; DeckEntityMapper
+uses DeckFactory.create(id, gameId) to reconstruct the standard 52 cards without
+calling the ID generator. The factory's no-argument create method generates IDs
+only for new decks.
 
-Persistence mappers own rehydration through `fromEntity`. They instantiate
-domain models using persisted identifiers and restore child collections and
-relationships directly, without invoking factories or identity generators.
-
-For example, in `DeckEntityMapper`:
-
-```java
-public Deck fromEntity(DeckEntity entity) {
-    Deck deck = new Deck(
-        entity.getId(),
-        entity.getCards().stream().map(cardEntityMapper::fromEntity).toList()
-    );
-    deck.setGameId(entity.getGameId());
-    return deck;
-}
-```
-
-Rehydration:
-
-- preserves persisted IDs
-- preserves persisted card state
-- does not generate cards
-- does not generate UUIDs
-- preserves attached decks and undealt cards
-- does not perform creation-only behavior
+Rehydration preserves IDs, deck ownership, and exact undealt/player card state.
+Standard deck cards are derived; game and player cards are never regenerated.
 
 Persistence mappers implement this rehydration path in `fromEntity`.
 
@@ -320,10 +300,12 @@ exactly as long as persistence mapping preserves domain invariants.
 Create explicit mappers between domain models and persistence entities.
 Register entity mappers as Spring components with instance `toEntity` and
 `fromEntity` methods. Use constructor injection: DeckEntityMapper and
-PlayerEntityMapper depend on CardEntityMapper; GameEntityMapper depends on
-DeckEntityMapper and PlayerEntityMapper. Future repositories inject these mappers.
+PlayerEntityMapper use DeckFactory and CardEntityMapper respectively;
+GameEntityMapper depends on CardEntityMapper and PlayerEntityMapper.
+Repositories inject these mappers.
 
-Persistence mappers must not invoke aggregate creation logic.
+Persistence mappers must not generate new identities. Deck mapping reconstructs
+standard cards using the factory overload accepting persisted identity.
 
 When reading from the database, `fromEntity` constructs domain models directly
 and restores persisted state. Factories are not involved.
@@ -386,10 +368,10 @@ Avoid sharing persistence entities outside the persistence package.
 #### Current implementation scope
 
 Entities and mappers preserve the state currently exposed by the domain models:
-identifiers, names, deck attachment, original deck cards, player order, and hands.
+identifiers, names, deck attachment, undealt card order, and hands.
 Player owns its cards directly; there is no Hand class or Hand entity/table.
-DeckEntity and PlayerEntity each store ordered
-card arrays in a `cards` column. `CardEntity` contains only suit and rank with no identity or deck reference. `CardListConverter` uses JPA `AttributeConverter`
+DeckEntity stores only ID and game attachment. PlayerEntity stores ordered
+card arrays in a `cards` column; GameEntity stores ordered `undealt_cards`. `CardEntity` contains only suit and rank with no identity or deck reference. `CardListConverter` uses JPA `AttributeConverter`
 to encode the list as JSON text in that row; there is no Card entity/table or
 card join table. Array order and repeated values are preserved. Enums are
 encoded as names and derived numeric values are not stored. JPA does not define
@@ -399,19 +381,14 @@ keeps the array in the owning row without database-specific array types.
 Mapper `fromEntity` methods restore supplied state without generating IDs.
 CardValueMapper maps immutable values with `toValue` and `fromValue`.
 The mappings use scalar ownership IDs and unidirectional JPA associations to
-avoid recursive mapping. GameEntity stores ordered `decks` directly.
-GameEntityMapper restores Shoe from the deck collection and undealt card list,
-then passes it and the restored players into Game;
-Deck.gameId records the owning game.
-Ordered entity collections use join tables, including `game_decks`.
-Standalone decks retain a nullable game ID. Removing a player deletes only its
-stored card array; the deck's original values remain unchanged.
+avoid recursive mapping. GameEntityMapper restores Shoe from the ordered
+undealt-card list, then passes it and restored players into Game. Deck.gameId
+records ownership through decks.game_id; there is no game_decks join table.
+Standalone decks retain a nullable game ID. Removing a player discards their
+stored cards without changing the game's undealt list.
 
-Shoe exposes its ordered undealt cards independently from original deck
-cards. GameEntity persists them in an undealt_cards JSON column using
-CardListConverter. GameEntityMapper restores the exact remaining list, including
-an empty exhausted undealt list, without rebuilding it from decks. Removing a player
-discards their hand; those cards remain absent from the undealt list.
+GameEntity persists undealt_cards as JSON using CardListConverter. Restoration
+preserves exact remaining order and exhaustion without rebuilding from decks.
 Map loaded collections while the persistence context is open.
 
 ### 3. Create aggregate repositories
@@ -557,9 +534,10 @@ Use transactions for operations involving multiple persistent changes.
 Services use constructor injection and transactions. Creation uses domain
 factories. Game membership writes go through GameRepository.update; the mapper
 sets child game relationships and cascade mappings persist the changes.
-Player creation and deck attachment in their services prepare domain objects.
+Player creation prepares domain objects; deck attachment persists ownership.
 Player lookups require a matching game ID. An attached deck cannot be attached
-again. Player removal uses orphan removal; game deletion uses cascade mappings.
+again. Player removal uses orphan removal; game deletion explicitly deletes
+attached decks and cascades to players.
 
 GameService resolves the game first, checks player ownership, and delegates to
 Game.dealCards(int cardCount, Player player). Game coordinates removing
@@ -809,7 +787,7 @@ Verify:
 
 - persisted aggregate IDs are preserved
 - rehydration does not generate new IDs
-- rehydration does not regenerate cards
+- rehydration does not regenerate game or player cards; standard deck cards are derived
 - rehydration preserves deck attachment
 - rehydration preserves dealt/discarded state
 
@@ -903,3 +881,11 @@ The API error media type still needs one final decision:
 - use `application/json`
 
 This is an API-contract decision and does not add a business requirement.
+
+### Deck persistence simplification (implemented)
+
+GameEntity and Shoe no longer retain deck collections. DeckEntity stores only ID
+and its game association. DeckService persists attachment separately in the same
+transaction as the game's undealt-card update. Deleting a game explicitly deletes
+attached deck records before deleting the game and its players. Unattached decks
+remain available. Only game undealt cards and player hands store card JSON.

@@ -25,6 +25,6 @@ public class DeckService {
     public Deck attachDeckToGame(UUID gameId, UUID deckId) {
         Deck deck = deckRepository.getById(deckId);
         deck.setGameId(gameId);
-        return deck;
+        return deckRepository.update(deck);
     }
 }
