@@ -3,7 +3,7 @@
   "info": {
     "title": "Card Shoe API \u2014 proposed contract",
     "version": "0.1.0-draft",
-    "description": "PLANNING DRAFT: endpoints are not implemented. See implementation-plan.md for confirmed behavior and remaining proposals. Mock responses are stateless examples, not game behavior. JSON request objects reject unknown fields, missing/null fields and invalid types; no numeric coercion. Errors use the ErrorResponse schema with a stable code. Unknown routes return 404 ENDPOINT_NOT_FOUND. In-memory storage remains a proposal."
+    "description": "Endpoints and centralized exception handling are implemented. Request validation and additional HTTP error mappings remain planned. See implementation-plan.md for confirmed behavior and remaining proposals. Mock responses are stateless examples, not game behavior. JSON request objects reject unknown fields, missing/null fields and invalid types; no numeric coercion. Errors use detail, status, and a stable code. Missing resources return 404, already attached decks return 422, and all other exceptions currently return 500; other error responses below remain planned. Unknown routes return 404 ENDPOINT_NOT_FOUND. In-memory storage remains a proposal."
   },
   "servers": [
     {
@@ -67,21 +67,21 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
                   },
                   "VALIDATION_FAILED": {
                     "value": {
-                      "message": "One or more request fields are invalid.",
+                      "detail": "One or more request fields are invalid.",
                       "status": 400,
                       "code": "VALIDATION_FAILED"
                     }
@@ -100,7 +100,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -127,7 +127,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -146,7 +146,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -165,7 +165,7 @@
                 "examples": {
                   "UNSUPPORTED_MEDIA_TYPE": {
                     "value": {
-                      "message": "Content-Type must be application/json.",
+                      "detail": "Content-Type must be application/json.",
                       "status": 415,
                       "code": "UNSUPPORTED_MEDIA_TYPE"
                     }
@@ -212,14 +212,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -238,7 +238,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -265,7 +265,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -284,7 +284,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -303,7 +303,7 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
@@ -363,7 +363,7 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
@@ -382,7 +382,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -409,7 +409,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -428,7 +428,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -447,7 +447,7 @@
           "Decks"
         ],
         "summary": "Permanently add a deck to a game",
-        "description": "Attach an unassigned deck to this game shoe. A deck belongs to at most one shoe, and a shoe belongs to one game. Assignment is atomic; attached decks cannot be removed. Duplicate or cross-game attachment returns 409 DECK_ALREADY_ASSIGNED.",
+        "description": "Attach an unassigned deck to this game shoe. A deck belongs to at most one shoe, and a shoe belongs to one game. Assignment is atomic; attached decks cannot be removed. Duplicate or cross-game attachment returns 422 DECK_ALREADY_ASSIGNED.",
         "responses": {
           "204": {
             "description": "Deck added. No response body."
@@ -462,21 +462,21 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
                   },
                   "VALIDATION_FAILED": {
                     "value": {
-                      "message": "One or more request fields are invalid.",
+                      "detail": "One or more request fields are invalid.",
                       "status": 400,
                       "code": "VALIDATION_FAILED"
                     }
@@ -495,7 +495,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -522,7 +522,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -541,7 +541,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -560,7 +560,7 @@
                 "examples": {
                   "UNSUPPORTED_MEDIA_TYPE": {
                     "value": {
-                      "message": "Content-Type must be application/json.",
+                      "detail": "Content-Type must be application/json.",
                       "status": 415,
                       "code": "UNSUPPORTED_MEDIA_TYPE"
                     }
@@ -579,14 +579,14 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
                   },
                   "DECK_NOT_FOUND": {
                     "value": {
-                      "message": "Deck '22222222-2222-4222-8222-222222222222' was not found.",
+                      "detail": "Deck '22222222-2222-4222-8222-222222222222' was not found.",
                       "status": 404,
                       "code": "DECK_NOT_FOUND"
                     }
@@ -595,8 +595,8 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict. See named examples and shared error catalogue.",
+          "422": {
+            "description": "Deck is already attached. See named examples and shared error catalogue.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -605,8 +605,8 @@
                 "examples": {
                   "DECK_ALREADY_ASSIGNED": {
                     "value": {
-                      "message": "Deck '22222222-2222-4222-8222-222222222222' is already assigned to a game.",
-                      "status": 409,
+                      "detail": "Deck '22222222-2222-4222-8222-222222222222' is already assigned to a game.",
+                      "status": 422,
                       "code": "DECK_ALREADY_ASSIGNED"
                     }
                   }
@@ -737,14 +737,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -763,7 +763,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -790,7 +790,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -809,7 +809,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -828,7 +828,7 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
@@ -891,14 +891,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -917,7 +917,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -944,7 +944,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -963,7 +963,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -982,7 +982,7 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
@@ -1028,14 +1028,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -1054,7 +1054,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -1081,7 +1081,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -1100,7 +1100,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -1119,7 +1119,7 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
@@ -1162,21 +1162,21 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
                   },
                   "VALIDATION_FAILED": {
                     "value": {
-                      "message": "One or more request fields are invalid.",
+                      "detail": "One or more request fields are invalid.",
                       "status": 400,
                       "code": "VALIDATION_FAILED"
                     }
@@ -1195,7 +1195,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -1222,7 +1222,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -1241,7 +1241,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -1260,7 +1260,7 @@
                 "examples": {
                   "UNSUPPORTED_MEDIA_TYPE": {
                     "value": {
-                      "message": "Content-Type must be application/json.",
+                      "detail": "Content-Type must be application/json.",
                       "status": 415,
                       "code": "UNSUPPORTED_MEDIA_TYPE"
                     }
@@ -1279,7 +1279,7 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
@@ -1372,14 +1372,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -1398,7 +1398,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -1425,7 +1425,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -1444,7 +1444,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -1463,7 +1463,7 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
@@ -1509,14 +1509,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -1535,7 +1535,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -1562,7 +1562,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -1581,7 +1581,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -1600,14 +1600,14 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
                   },
                   "PLAYER_NOT_FOUND": {
                     "value": {
-                      "message": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
+                      "detail": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
                       "status": 404,
                       "code": "PLAYER_NOT_FOUND"
                     }
@@ -1683,14 +1683,14 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
@@ -1709,7 +1709,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -1736,7 +1736,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -1755,7 +1755,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -1774,14 +1774,14 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
                   },
                   "PLAYER_NOT_FOUND": {
                     "value": {
-                      "message": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
+                      "detail": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
                       "status": 404,
                       "code": "PLAYER_NOT_FOUND"
                     }
@@ -1867,21 +1867,21 @@
                 "examples": {
                   "INVALID_REQUEST": {
                     "value": {
-                      "message": "Request body must be valid JSON.",
+                      "detail": "Request body must be valid JSON.",
                       "status": 400,
                       "code": "INVALID_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
-                      "message": "Parameter 'gameId' must be a UUID.",
+                      "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
                       "code": "INVALID_PARAMETER"
                     }
                   },
                   "VALIDATION_FAILED": {
                     "value": {
-                      "message": "One or more request fields are invalid.",
+                      "detail": "One or more request fields are invalid.",
                       "status": 400,
                       "code": "VALIDATION_FAILED"
                     }
@@ -1900,7 +1900,7 @@
                 "examples": {
                   "METHOD_NOT_ALLOWED": {
                     "value": {
-                      "message": "The HTTP method is not supported for this endpoint.",
+                      "detail": "The HTTP method is not supported for this endpoint.",
                       "status": 405,
                       "code": "METHOD_NOT_ALLOWED"
                     }
@@ -1927,7 +1927,7 @@
                 "examples": {
                   "NOT_ACCEPTABLE": {
                     "value": {
-                      "message": "The requested response media type is not supported.",
+                      "detail": "The requested response media type is not supported.",
                       "status": 406,
                       "code": "NOT_ACCEPTABLE"
                     }
@@ -1946,7 +1946,7 @@
                 "examples": {
                   "INTERNAL_ERROR": {
                     "value": {
-                      "message": "An unexpected error occurred.",
+                      "detail": "An unexpected error occurred.",
                       "status": 500,
                       "code": "INTERNAL_ERROR"
                     }
@@ -1965,7 +1965,7 @@
                 "examples": {
                   "UNSUPPORTED_MEDIA_TYPE": {
                     "value": {
-                      "message": "Content-Type must be application/json.",
+                      "detail": "Content-Type must be application/json.",
                       "status": 415,
                       "code": "UNSUPPORTED_MEDIA_TYPE"
                     }
@@ -1984,14 +1984,14 @@
                 "examples": {
                   "GAME_NOT_FOUND": {
                     "value": {
-                      "message": "Game '11111111-1111-4111-8111-111111111111' was not found.",
+                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
                       "status": 404,
                       "code": "GAME_NOT_FOUND"
                     }
                   },
                   "PLAYER_NOT_FOUND": {
                     "value": {
-                      "message": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
+                      "detail": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
                       "status": 404,
                       "code": "PLAYER_NOT_FOUND"
                     }
@@ -2337,12 +2337,12 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "message",
+          "detail",
           "status",
           "code"
         ],
         "properties": {
-          "message": {
+          "detail": {
             "type": "string"
           },
           "status": {
