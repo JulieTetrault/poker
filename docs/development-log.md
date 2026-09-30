@@ -2642,3 +2642,54 @@ toResponse methods, and the dealt-hand persistence fix. No tests were added.
   validate, and verify passed, including all 73 existing tests with no failures,
   errors, or skips.
 - git diff --check passed; no tests were added or changed.
+
+## Step 85 — Centralize API exception handling
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested formatted ErrorResponse bodies from a centralized handler:
+missing resources return 404, already attached decks return 422, and all other
+errors return 500. Codex added ApiExceptionHandler with RestControllerAdvice,
+ErrorResponse(detail, status, code), and a separate ErrorResponseMapper with
+toResponse overloads. Controllers remain unchanged.
+
+NotFoundException exposes structured resource identity for safe public messages
+and stable GAME_NOT_FOUND, PLAYER_NOT_FOUND, and DECK_NOT_FOUND codes.
+PlayerNotPartOfGameException maps to 404 PLAYER_NOT_FOUND in the requested game.
+Deck now throws DeckAlreadyAttachedException, a specific IllegalStateException
+subtype, mapped to 422 DECK_ALREADY_ASSIGNED. Unrelated exceptions map to 500
+INTERNAL_ERROR with a generic detail; full exceptions are logged server-side.
+Responses retain the OpenAPI application/problem+json media type. Updated the
+plan, OpenAPI error schema/examples from message to detail, and deck attachment
+status/manual examples from 409 to the developer's requested 422. Other HTTP
+error mappings and request validation remain planned. No tests were added or
+changed, preserving the earlier instruction.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- Parsed OpenAPI JSON and checked ErrorResponse required fields and the deck
+  attachment 422 response. git diff --check passed.
+- No HTTP smoke checks were run; no commit or push was performed.
+
+## Step 86 — Prepare the exception handlers commit and pull request
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer approved the implementation and requested a commit, push, and PR.
+Codex reviewed the exception handler, error mapper/response, domain exceptions,
+and aligned documentation, then prepared the repository PR template for
+feat/exception-handlers. No implementation changes or tests were added during
+PR preparation. Request validation remains outside this PR.
+
+### Actual verification
+
+- The implementation's Java 26.0.2-tem Maven Wrapper spotless:apply, validate,
+  and verify checks passed in step 85; all 73 existing tests passed.
+- git diff --check and OpenAPI JSON parsing passed during PR preparation.

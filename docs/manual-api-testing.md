@@ -43,7 +43,7 @@ To inspect a named planned failure directly:
 ```sh
 curl -i -X POST http://localhost:4010/api/v1/games/11111111-1111-4111-8111-111111111111/decks \
   -H 'Content-Type: application/json' \
-  -H 'Prefer: code=409, example=DECK_ALREADY_ASSIGNED' \
+  -H 'Prefer: code=422, example=DECK_ALREADY_ASSIGNED' \
   -d '{"deckId":"22222222-2222-4222-8222-222222222222"}'
 ```
 
@@ -71,7 +71,7 @@ leave state unchanged.
 | --- | --- | --- |
 | Empty game | Create game; read players and both shoe counts | 201; no players, four zero suit rows, 52 zero face rows |
 | Deck basics | Create and attach deck | 201 each; 52 remaining, 13 per suit, one of every face |
-| Assignment conflicts | Attach same deck twice; attach it to another game | 409 `DECK_ALREADY_ASSIGNED`; both games unchanged by failure |
+| Assignment conflicts | Attach same deck twice; attach it to another game | 422 `DECK_ALREADY_ASSIGNED`; both games unchanged by failure |
 | Player basics | Add A and B, read hands | 201 with distinct IDs; empty hands, zero totals |
 | Single-deck exhaustion | Shuffle; deal count 1 to A 52 times; read hand; deal once more | 52 distinct physical cards/faces, total hand value 364; final 200 with zero dealt |
 | Multi-deck exhaustion | Fresh game with two distinct decks; 104 one-card deals, then one extra | Each face twice with distinct deck IDs; 105th returns no cards |

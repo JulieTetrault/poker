@@ -1,5 +1,6 @@
 package com.example.poker.domain.model;
 
+import com.example.poker.domain.exception.DeckAlreadyAttachedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public final class Deck {
 
     public void setGameId(UUID gameId) {
         if (this.gameId != null) {
-            throw new IllegalStateException("Deck already attached: " + id);
+            throw new DeckAlreadyAttachedException(id);
         }
         this.gameId = gameId;
     }

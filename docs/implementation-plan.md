@@ -2,8 +2,8 @@
 
 Status: implementation steps with confirmed API decisions, September 30, 2026.
 
-Game and deck endpoints are implemented; request validation and centralized
-exception handling remain deferred. Follow the [requirements](requirements.md),
+Game and deck endpoints and centralized exception handling are implemented;
+request validation remains deferred. Follow the [requirements](requirements.md),
 [domain model](domain.md), and [OpenAPI contract](openapi.json). Use the
 [manual testing guide](manual-api-testing.md) when the API is available.
 
@@ -571,7 +571,7 @@ Do not write domain behavior into repository classes.
 Implemented as `GameController` and `DeckController`, including game-scoped
 player routes, request/response DTOs, and separate response mappers exposing `toResponse` methods. The developer labels
 this work implementation step 5. Request validation and centralized exception
-handling will be implemented separately; no tests were added in this step.
+handling are separate steps; no tests were added in the controller step.
 
 Controllers:
 
@@ -721,7 +721,19 @@ Shuffle only undealt cards and preserve:
 
 ### 9. Add centralized error handling
 
-Use a centralized REST exception handler.
+Implemented with ApiExceptionHandler (`@RestControllerAdvice`) and a separate
+ErrorResponseMapper. Controllers do not catch exceptions. Responses use
+`application/problem+json` and contain `detail`, `status`, and `code`.
+
+- Missing games, decks, or players: 404 with GAME_NOT_FOUND, DECK_NOT_FOUND,
+  or PLAYER_NOT_FOUND. A player outside the requested game also maps to 404.
+- DeckAlreadyAttachedException: 422 with DECK_ALREADY_ASSIGNED. Deck throws this
+  specific exception rather than a generic IllegalStateException.
+- All other exceptions: 500 with INTERNAL_ERROR and a generic detail. The
+  exception is logged server-side; its internal message is not sent to clients.
+
+Request validation and additional HTTP error mappings remain future work.
+The statuses above supersede older proposed mappings.
 
 Use:
 
@@ -737,7 +749,7 @@ Example:
 ```json
 {
   "detail": "Deck '...' is already assigned to a game.",
-  "status": 409,
+  "status": 422,
   "code": "DECK_ALREADY_ASSIGNED"
 }
 ```
@@ -874,12 +886,7 @@ aligned with implemented behavior.
 
 Canonical initial/appended card order remains a proposal.
 
-The API error media type still needs one final decision:
-
-- retain `application/problem+json` with the simplified `ErrorResponse`, or
-- use `application/json`
-
-This is an API-contract decision and does not add a business requirement.
+The implemented error media type is `application/problem+json`.
 
 ### Deck persistence simplification (implemented)
 
