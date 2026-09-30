@@ -69,7 +69,7 @@ merged to activate updates; automatic merging is disabled.
 ## Formatting and linting
 
 Use [Spotless](https://github.com/diffplug/spotless/tree/main/plugin-maven) with
-google-java-format for consistent Java formatting, and
+google-java-format in AOSP style for four-space Java indentation, and
 [Checkstyle](https://checkstyle.org/checks.html) for naming, imports, required
 braces, and other code conventions. Both check production and test sources.
 This Maven-based setup fits the Java-only project and needs no Node/npm installation.

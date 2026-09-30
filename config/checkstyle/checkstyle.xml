@@ -12,7 +12,10 @@
     <module name="RedundantImport"/>
     <module name="PackageName"/>
     <module name="TypeName"/>
-    <module name="MethodName"/>
+    <module name="MethodName">
+      <property name="format"
+          value="^[a-z][a-zA-Z0-9]*$|^(given[a-zA-Z0-9]+__)?when[a-zA-Z0-9]+__then[a-zA-Z0-9]+$"/>
+    </module>
     <module name="MemberName"/>
     <module name="ParameterName"/>
     <module name="LocalVariableName"/>

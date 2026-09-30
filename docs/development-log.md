@@ -431,3 +431,417 @@ All existing planning changes are included.
 - The signed commit's repository pre-commit hook passed staged Maven
   `validate`: Spotless passed and Checkstyle reported zero violations.
 - Maven `verify` was not rerun for these documentation-only changes.
+
+## Step 11: Prepare the domain implementation branch
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested a feature branch for implementation-plan step 1,
+creating the domain classes. Codex created `feat/domain-classes` from local
+`main`, preserving the developer's revised architecture, package structure,
+and implementation plan byte for byte as uncommitted changes. Domain
+implementation has not started; no commit or push was requested.
+
+### Actual verification
+
+- Confirmed the active branch and the unchanged implementation-plan Git blob hash.
+- All local links in the implementation plan resolve.
+- `git diff --check` reports 20 existing trailing-whitespace lines in the
+  revised plan, used as Markdown hard breaks; preserved the developer's content.
+- Maven checks were not run because no Java or build files changed.
+
+## Step 12: Implement domain classes and unit tests
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested implementation-plan step 1 and unit tests on
+`feat/domain-classes`. Codex implemented `Game`, `Shoe`, `Deck`, `Card`,
+`Player`, `Hand`, `Suit`, and `Rank` in `com.example.poker.domain.model`,
+using only Java types and no framework annotations or new dependencies.
+The developer's revised implementation plan remains unchanged.
+
+Decks generate 52 physical cards with unique UUIDs and original deck IDs.
+Attachment is permanent; duplicate attachment and foreign-game players are
+rejected before mutation. The shoe tracks undealt cards separately from the
+original deck collections, supports partial/empty deals, returns ordered
+suit counts including zeros, and implements Fisher–Yates with an injectable
+`RandomGenerator`. Collection access returns immutable snapshots.
+Hand totals are derived from rank values. Player removal clears the hand
+without replenishing the shoe. Player ordering uses descending hand totals
+and ascending canonical UUID text for ties (including UUIDs with the high bit
+set). Initial deck iteration order is an implementation detail, not a confirmed
+API guarantee. HTTP field validation and persistence remain later steps.
+
+Codex added 16 JUnit Jupiter/AssertJ unit test cases without Spring contexts,
+covering deck composition, values, ownership, rejected mutations, collection
+protection, partial and empty deals, independent games, ordering, discards,
+suit counts, controlled Fisher–Yates behavior, and complete one/two-deck deals.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env` and used the Maven Wrapper.
+- `./mvnw spotless:apply` passed.
+- `./mvnw -Dtest=DomainTest test` passed: 16 cases, zero failures/errors/skips.
+- `./mvnw validate` passed: formatting clean and zero Checkstyle violations.
+- `./mvnw verify` passed: 17 tests total, including the existing application
+  context test, and executable JAR packaging succeeded.
+- New Java files and the development-log changes pass whitespace checks.
+  The full diff still reports the 20 preserved Markdown hard-break lines in
+  the developer's revised implementation plan.
+- No commit or push was performed.
+
+## Step 13: Organize unit tests by domain class
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested separate test classes for each domain type. Codex
+replaced `DomainTest` with `DeckTest`, `RankTest`, `HandTest`, `PlayerTest`,
+`ShoeTest`, and `GameTest`. The combined hand/player test now has separate
+cases: direct hand totals and collection protection in `HandTest`, and card
+receipt and derived player values in `PlayerTest`. Existing coverage is
+preserved; domain production code and the revised plan are unchanged.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` selected with `sdk env` and the Maven Wrapper.
+- `./mvnw spotless:apply` and `./mvnw validate` passed, with zero lint violations.
+- `./mvnw clean verify` passed: 17 domain cases plus the existing application
+  test, zero failures/errors/skips. The clean build removed the obsolete
+  compiled `DomainTest` before running the reorganized suite.
+- Changed test files and development-log whitespace checks passed. The
+  existing implementation-plan Markdown hard breaks remain unchanged.
+
+## Step 14: Adopt given/when/then test names
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested the `given__when__then` naming convention. Codex
+renamed every test method to `givenCondition__whenAction__thenExpectedResult`,
+including the existing application context test. Assertions and production
+behavior are unchanged. Checkstyle now accepts this exact naming pattern
+alongside conventional camelCase methods. CONTRIBUTING.md records the test
+naming and per-class organization conventions.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply`, `./mvnw validate`, and `./mvnw verify` passed.
+- All 18 tests passed, with zero failures/errors/skips and no lint violations.
+- Verified all 16 test methods (18 cases including parameterized cases)
+  follow the naming convention; changed files pass whitespace checks.
+- CONTRIBUTING.md local links resolve. The revised implementation plan
+  remains unchanged, including its previously noted Markdown hard breaks.
+
+## Step 15: Use four-space Java indentation
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested four-space indentation and code reformatting. Codex
+configured Spotless's existing google-java-format formatter to use AOSP
+style, aligned Java EditorConfig indentation to four spaces, and reformatted
+all 16 production/test Java files with Spotless. README documents the selected
+style; formatter versions, behavior, and the revised plan are unchanged.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` selected with `sdk env` and the Maven Wrapper.
+- `./mvnw spotless:apply` reformatted all 16 Java files successfully.
+- `./mvnw validate` passed with zero Checkstyle violations.
+- `./mvnw verify` passed: all 18 tests, zero failures/errors/skips, successful
+  executable JAR packaging.
+- Changed files pass whitespace checks and README local links resolve.
+  The preserved implementation-plan hard breaks remain unchanged.
+
+## Step 16: Create aggregates through domain factories
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer revised the architecture to assign identity generation and valid
+initial state to domain factories, with separate creation and rehydration
+paths, and requested implementation with unit tests. Codex added
+`GameFactory`, `DeckFactory`, and `PlayerFactory` in `domain.factory`, plus
+`IdGenerator` and its production `UUIDGenerator` implementation. Player has
+its own factory because player creation is a separate application operation.
+No additional child factories are needed: GameFactory creates the shoe,
+DeckFactory creates all 52 cards, and PlayerFactory creates the empty hand.
+
+Models now receive existing IDs and state. Game construction accepts its shoe
+and players; deck construction accepts attachment and its original cards.
+Shoe and player/hand construction support restored undealt-card and hand
+state without recreating cards. Constructors retain ownership checks and
+protect collections; decks require 52 distinct faces and card identities.
+Creation factories enforce the documented nonblank, at-most-100-character
+names before requesting IDs. Rehydration uses persisted IDs/state and never
+calls the ID generator or resets attachment/dealt/discarded state.
+
+Codex retained the developer's `Deck.setShoeId` API and revised plan, moved
+card generation out of Deck, adapted existing domain tests to factory-created
+games/decks, and added per-class factory and UUID generator tests. New factory
+tests use deterministic generators, given/when/then method names, nested
+creation/rehydration groups, and display names. Four-space formatting remains.
+No framework wiring, persistence adapters, or new dependencies were added.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed.
+- `./mvnw -Dtest='*FactoryTest,UuidGeneratorTest' test` passed: 16 cases,
+  zero failures/errors/skips.
+- `./mvnw validate` passed with zero Checkstyle violations.
+- `./mvnw verify` passed: all 34 tests and executable JAR packaging.
+- Verified production `UUID.randomUUID()` occurs only in `UUIDGenerator`;
+  domain models contain no UUID generation calls.
+- Full `git diff --check`, new Java whitespace checks, and revised-plan local
+  links passed. The revised plan's Git blob hash is unchanged from this step's
+  initial inspection (`f1222a421c316e351fff1c4ec794fe04d46269d6`).
+- No commit or push was performed.
+
+## Step 17: Inject ShoeFactory into GameFactory through Spring
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested ShoeFactory and Spring injection into GameFactory.
+Codex added ShoeFactory, which requests an ID from IdGenerator and constructs
+an empty shoe for the supplied game. GameFactory now receives ShoeFactory
+through its single constructor and delegates shoe creation. GameFactory,
+ShoeFactory, and UuidGenerator are Spring components; Spring automatically
+injects their sole constructors. Model classes retain no Spring annotations.
+
+Codex updated constructor call sites, added per-class ShoeFactory unit tests
+and a delegation test using separate deterministic generators, and extended
+the existing Spring context test to exercise injected factories. The user's
+recent simplified Deck/Game/Player factory changes are preserved. A malformed
+existing duplicate-deck assertion in ShoeTest prevented Java formatting;
+Codex repaired it using the user's current Deck constructor. Spotless also
+formatted existing user edits and removed unused test imports.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env` and used the Maven Wrapper.
+- Initial checks stopped at the existing ShoeTest syntax error; after repairing
+  it, `./mvnw spotless:apply` and `./mvnw validate` passed with zero lint violations.
+- `./mvnw verify` compiled successfully and ran 33 cases: 24 passed, nine failed,
+  zero errors/skips. Both new ShoeFactory cases, GameFactory delegation, and
+  the Spring context wiring test passed.
+- The nine remaining failures reflect existing test expectations versus the
+  user's simplified implementations: six game/player name-validation cases,
+  two deck factory identity/duplicate-ID cases, and deck collection protection.
+  These behaviors were not restored or tests removed as part of shoe injection.
+- Whitespace checks passed. No commit or push was performed.
+
+## Step 18: Align tests with simplified models and factories
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer intentionally simplified factories/models while deciding which
+business logic belongs in services or the domain, and requested test cleanup
+with clearly separated GIVEN, WHEN, THEN blocks. Codex revised the per-class
+tests to cover only current behavior: factory identities and initial state,
+52-card deck composition, shoe assignment, hand accumulation and values,
+player card receipt, game membership/removal and ordering, rank values, UUID
+generation, and Spring factory wiring.
+
+Obsolete tests and references for validation, dealing, shuffling, discarded
+hands, collection protection, and removed rehydration APIs were removed.
+DeckFactory tests no longer expect card IDs to come from IdGenerator: the
+current simplified factory generates those separately. Inputs use fixed IDs
+where useful. Every test body separates setup, action, and assertions with
+`// GIVEN`, `// WHEN`, and `// THEN`; CONTRIBUTING.md records this convention.
+Factory tests retain nested groups and display names. Production behavior is
+preserved; Spotless only reformatted the developer's Card record declaration.
+Deferred business rules are not claimed as implemented or verified.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` and `./mvnw validate` passed with zero lint violations.
+- `./mvnw clean verify` passed: 15 tests, zero failures/errors/skips, executable
+  JAR packaging succeeded. Cleaning removed stale compiled test classes.
+- All 15 test methods have ordered GIVEN/WHEN/THEN blocks and follow the
+  given/when/then naming convention.
+- Java whitespace checks, `git diff --check`, and CONTRIBUTING.md local links
+  passed. No commit or push was performed.
+
+## Step 19: Add builder fixtures with Java Faker defaults
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested PlayerFixture and CardFixture builders for later use.
+Codex added both to `src/test/java/com/example/poker/fixture` with `builder()`,
+fluent `with...` overrides, and `build()` returning domain objects. Java Faker
+provides default UUIDs, player names, and random suit/rank selections. Players
+start with an empty hand unless `withCards(...)` supplies cards. Defaults are
+chosen once per builder. Java Faker `1.0.2` is explicitly pinned and test-scoped
+in pom.xml, using the coordinates documented by the library's official README.
+Existing tests were not migrated to fixtures; no new fixture tests were added.
+Spotless formatted existing developer edits alongside the fixtures.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` selected with `sdk env` and the Maven Wrapper.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` stopped at three existing Checkstyle
+  method-name violations in ShoeTest, ShoeFactoryTest, and UUIDGeneratorTest:
+  their current `when...__then...` names do not match the configured convention.
+  The developer's test names were preserved; tests did not run.
+- Separate `./mvnw compiler:testCompile` passed, compiling all 14 test source
+  files including both fixtures. This checks compilation only, not full build
+  verification or fixture execution.
+- `git diff --check` and new fixture whitespace checks passed.
+- No commit or push was performed.
+
+## Step 20: Add ShoeFixture
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested a shoe fixture alongside the existing player/card
+fixtures. Codex added ShoeFixture with Faker-generated shoe/game UUIDs,
+fluent `withId`, `withGameId`, and `withDecks` overrides, and `build()`.
+Both construction with `new ShoeFixture()` and `ShoeFixture.builder()` are
+supported. The default shoe has no decks; provided decks are copied into each
+built shoe's collection using the current simplified model, without adding
+attachment rules. Existing tests were not migrated. Spotless also formatted
+the developer's current GameTest edits.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` stopped at the same three existing
+  Checkstyle test-name violations noted in step 19; tests did not run.
+- Separate `./mvnw compiler:testCompile` passed for all 15 test source files,
+  including ShoeFixture. This checks compilation only.
+- `git diff --check` and ShoeFixture whitespace checks passed.
+- No commit or push was performed.
+
+## Step 21: Mock IdGenerator in factory tests
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested mocked IdGenerator dependencies in all factory tests.
+Codex replaced lambda generators in DeckFactoryTest, PlayerFactoryTest,
+ShoeFactoryTest, and GameFactoryTest with Mockito mocks and BDD `given(...)`
+stubbing. GameFactoryTest uses separate mocks for game and shoe identity
+while retaining the real injected ShoeFactory. Existing identity and initial
+state assertions remain; the updated bodies separate GIVEN, WHEN, and THEN.
+ShoeFactoryTest's updated name reflects its mocked dependency and matches the
+configured convention. UUIDGeneratorTest still tests the real generator.
+No production changes or dependencies were added. Spotless also formatted
+the developer's current GameTest and HandTest edits.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` selected with `sdk env` and Maven Wrapper.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` stopped at two existing Checkstyle
+  naming violations in ShoeTest and UUIDGeneratorTest; full tests/build did
+  not run. These other test names were preserved.
+- Separate focused execution using `./mvnw compiler:testCompile
+  dependency:properties surefire:test -Dtest='*FactoryTest'` passed all four
+  factory cases, zero failures/errors/skips. This is focused verification,
+  not a passing full lifecycle build.
+- New factory test whitespace checks and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 22: Use Mockito extension and annotation-based factory injection
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer provided a preferred MockitoExtension, @Mock, and @InjectMocks
+structure. Codex applied it to all four factory test classes, retaining the
+repository's `*Test` names, nested creation groups, and GIVEN/WHEN/THEN blocks.
+Mocks and factories are now fields initialized by Mockito. GameFactoryTest
+also mocks its ShoeFactory dependency and stubs it with a ShoeFixture-built
+shoe, checking that the returned game contains that exact shoe. Production
+classes, other tests, and dependencies are unchanged.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` stopped at the existing ShoeTest and
+  UUIDGeneratorTest naming violations; full lifecycle verification remains
+  unsuccessful.
+- Separate focused execution using `./mvnw compiler:testCompile
+  dependency:properties surefire:test -Dtest='*FactoryTest'` passed all four
+  cases, zero failures/errors/skips, including Mockito initialization of
+  fields used by nested tests.
+- Factory test whitespace checks and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 23: Make the GIVEN test-name prefix optional
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested an optional GIVEN part in test method names. Codex
+updated the Checkstyle MethodName pattern to accept both
+`givenCondition__whenAction__thenExpectedResult` and
+`whenAction__thenExpectedResult`, preserving ordinary camelCase method names.
+CONTRIBUTING.md now documents the optional prefix. Existing user changes and
+test bodies were preserved.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` selected with `sdk env` and Maven Wrapper.
+- `./mvnw validate` passed with zero Checkstyle violations, including the
+  existing ShoeTest and UUIDGeneratorTest names without GIVEN prefixes.
+- `./mvnw verify` ran 15 tests: 14 passed and one failed in GameTest at
+  line 70 because the actual player list contained an extra element.
+  Full build verification therefore failed on an unrelated assertion.
+- No Java files were edited; Spotless formatting checks passed in both runs.
+- `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 24: Combine domain implementation steps and prepare the domain PR
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested combining implementation-plan steps 1 and 2, then
+committing the domain models and opening a PR. Codex combined model and factory
+creation into step 1, retained factory guidance as a subsection, and renumbered
+the remaining steps. Existing model, factory, fixture, build, and documentation
+changes are included together on `feat/domain-classes`.
+
+Codex corrected GameTest's ordering test name to describe the existing name
+comparison for equal hand totals; production behavior and assertions remain
+unchanged. UUID tie-breaking remains documented work for the domain-behavior
+step. Rehydration, full domain rules, persistence, and HTTP endpoints remain
+future implementation work.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env` and used Maven Wrapper.
+- Initial validate/verify attempts stopped at GameTest formatting; corrected
+  with `./mvnw spotless:apply`.
+- `./mvnw validate` passed with zero Checkstyle violations.
+- `./mvnw clean verify` passed: 15 tests, zero failures/errors/skips, executable
+  JAR packaging succeeded.
+- Implementation-plan local links resolve; `git diff --check` passed.
