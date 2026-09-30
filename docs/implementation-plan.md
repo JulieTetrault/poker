@@ -2,7 +2,8 @@
 
 Status: implementation steps with confirmed API decisions, September 30, 2026.
 
-Game endpoints are not yet implemented. Follow the [requirements](requirements.md),
+Game and deck endpoints are implemented; request validation and centralized
+exception handling remain deferred. Follow the [requirements](requirements.md),
 [domain model](domain.md), and [OpenAPI contract](openapi.json). Use the
 [manual testing guide](manual-api-testing.md) when the API is available.
 
@@ -537,10 +538,11 @@ GameService resolves the game first, checks player ownership, and delegates to
 Game.dealCards(int cardCount, Player player). Game coordinates removing
 min(cardCount, remaining cards) from its undealt list and appending them to the
 supplied player's hand. GameService persists the updated aggregate once through
-GameRepository.update. The intended transaction saves both changes without changing membership or a
-separate player write. Current persistence tests expose missing saved hands when
-the supplied player is a separate instance from the game membership map; that
-existing issue remains unresolved.
+GameRepository.update. Game.dealCards replaces the existing member entry with
+the updated player instance returned by the ownership-checked lookup. This ensures the game
+mapper persists the dealt hand as well as the remaining shoe, even when the
+player lookup produces a separate domain instance. Both changes are saved in
+the same transaction without a separate player write.
 Positive-count validation belongs to the API request layer. Empty undealt lists return
 an empty list. Undealt order must survive reloading; player hands must also be saved, and discarded cards never become available again.
 Further service methods, HTTP error mapping, and concurrent mutation handling
@@ -566,7 +568,10 @@ Do not write domain behavior into repository classes.
 
 ### 7. Create controllers
 
-Create game, deck, and player controllers using the routes below.
+Implemented as `GameController` and `DeckController`, including game-scoped
+player routes, request/response DTOs, and separate response mappers exposing `toResponse` methods. The developer labels
+this work implementation step 5. Request validation and centralized exception
+handling will be implemented separately; no tests were added in this step.
 
 Controllers:
 

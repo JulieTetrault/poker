@@ -2539,3 +2539,106 @@ removal of DeckLifecyclePersistenceTest.
   failures, errors, or skips.
 - Documentation link targets exist and git diff --check passed.
 - No commit or push was performed for this step.
+
+## Step 81 — Create controllers and API DTOs (implementation step 5)
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested only DeckController, GameController, request/response
+objects, and a response mapper, covering every route in [OpenAPI](openapi.json).
+Codex implemented all 12 routes using existing application services and the
+contract's success statuses. GameController includes game-scoped deck and player
+operations; DeckController creates unattached decks. Request validation and
+centralized exception handling are deferred by explicit instruction. No tests
+were added or changed.
+
+DTO records keep transport models separate from domain and persistence models.
+Array responses use lists directly without wrapper objects. ResponseMapper
+converts suits and ranks to the documented strings, emits suit/rank counts in
+contract order with numeric rank JSON keys, and derives hand totals. Player
+names are trimmed before service delegation as specified by OpenAPI. Dealing
+returns the number actually dealt and reloads the game for the remaining count.
+The existing dealt-hand persistence issue documented in the implementation plan
+remains outside this API-only step; controller coverage does not fix it.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- Reviewed all 12 method/path mappings against the local OpenAPI contract.
+- Documentation link targets exist and git diff --check passed.
+- No HTTP smoke checks, new tests, commit, or push were performed.
+
+## Step 82 — Separate response mappers
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested separate response mappers with a toResponse method.
+Codex replaced the shared ResponseMapper with one Spring component per response
+object and updated controller constructor injection and calls. Card and hand
+value mappers offer toResponse overloads for individual objects and lists.
+The undealt-card mapper delegates nested suit responses to their own mapper.
+Response shapes, routes, and application behavior are preserved. No tests were
+added or changed; validation and exception handling remain deferred.
+
+### Actual verification
+
+- Used sdk env to select Java 26.0.2-tem and ran Maven Wrapper.
+- Initial checks caught a malformed extracted suit mapper; corrected it before
+  rerunning the checks.
+- Final spotless:apply, validate, and verify passed; all 73 existing tests passed
+  with no failures, errors, or skips.
+- git diff --check passed. No commit or push was performed.
+
+## Step 83 — Persist the updated player after dealing
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer reported a correct deal response followed by an empty player hand.
+Codex traced this to separate domain player instances: dealing changed the player
+loaded through PlayerService, while the game mapper saved the unchanged member.
+At the developer's direction, added Game.updatePlayer rather than using addPlayer.
+The method checks game ownership and existing membership, then replaces the
+member instance. GameService calls it after dealing and saves the game, persisting
+both the updated hand and the remaining shoe within the existing transaction.
+Updated the implementation plan. No tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Final spotless:apply, validate, and verify passed; all 73 existing tests passed
+  with no failures, errors, or skips.
+- A local HTTP smoke check could not start because the sandbox blocked server
+  socket binding. The developer declined escalation and will test the API.
+- git diff --check passed. No commit or push was performed.
+
+
+## Step 84 — Prepare the controllers commit and pull request
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer confirmed the endpoints work and requested a commit and PR for
+controllers. Preserved the developer's final simplification: Game.dealCards
+updates the existing player entry directly with players.replace after adding
+cards. There is no separate Game.updatePlayer method or service call in the
+final implementation. Codex aligned the implementation plan with that change
+and prepared the PR using the repository template. The PR includes all 12
+OpenAPI routes, request/response records, separate response mappers with
+toResponse methods, and the dealt-hand persistence fix. No tests were added.
+
+### Actual verification
+
+- The developer manually tested the endpoints and confirmed they work.
+- Selected Java 26.0.2-tem with sdk env; final Maven Wrapper spotless:apply,
+  validate, and verify passed, including all 73 existing tests with no failures,
+  errors, or skips.
+- git diff --check passed; no tests were added or changed.
