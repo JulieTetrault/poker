@@ -413,7 +413,28 @@ dependency, with Hibernate and H2 used only in tests at this step. Runtime
 persistence configuration remains a later step. Map loaded collections while
 the persistence context is open; collection associations are lazy by default.
 
-### 3. Create API DTOs and API mappers
+### 3. Create aggregate repositories
+
+Define Spring-independent `JPAGameRepository`, `JPADeckRepository`, and
+`JPAPlayerRepository` interfaces in the domain layer. Expose `create` and `update`
+operations returning the persisted aggregate. Game and Player additionally expose
+`deleteById(UUID id)`; Deck does not expose deletion.
+
+Implement persistence adapters using Spring Data JPA repositories and the existing
+entity mappers. Updates and deletions must first check whether the aggregate exists
+and throw the custom domain `NotFoundException` with the aggregate type and ID
+when it does not. Missing updates must never create an aggregate.
+
+Resolve Player and attached Deck game relationships using a JPA reference.
+Unattached decks must persist with a null game relationship. Keep each write
+operation transactional, and preserve existing aggregate identities.
+
+Use fixture-based Mockito unit tests for successful writes and missing aggregate
+failures, including confirmation that rejected operations perform no writes.
+Add the JPA runtime and embedded H2 dependencies required to wire the repositories;
+explicit database configuration remains in step 5.
+
+### 4. Create API DTOs and API mappers
 
 Create separate request and response DTOs matching the OpenAPI contract.
 
@@ -475,63 +496,6 @@ positive deal counts.
 
 Reject unknown fields and incorrect JSON types rather than coercing them.
 
-### 4. Create repository abstractions
-
-Define repository interfaces independently from Spring Data.
-
-Repository interfaces should operate on domain aggregate roots rather than
-Hibernate entities.
-
-For example:
-
-```java
-public interface GameRepository {
-    Game save(Game game);
-    Optional<Game> findById(UUID id);
-    void deleteById(UUID id);
-}
-```
-
-and:
-
-```java
-public interface DeckRepository {
-    Deck save(Deck deck);
-    Optional<Deck> findById(UUID id);
-}
-```
-
-The application/domain layer depends on these interfaces, not directly on
-Spring Data or Hibernate.
-
-Inside the persistence layer, create Spring Data repositories that operate on
-JPA entities:
-
-```java
-interface JpaGameRepository extends JpaRepository<GameEntity, UUID> {
-}
-```
-
-Then provide persistence adapters implementing the domain repository
-interfaces:
-
-```text
-GameRepository
-    ↑
-HibernateGameRepository
-    ├── JpaGameRepository
-    └── GameEntityMapper
-```
-
-A persistence adapter should:
-
-1. receive a domain aggregate
-2. map it to a JPA entity
-3. persist it through Spring Data
-4. map the persisted entity back through the rehydration path when required
-
-Repository adapters do not create new aggregate identities.
-
 ### 5. Configure H2 in-memory persistence
 
 Use H2 as the local in-memory database with Hibernate/JPA.
@@ -574,7 +538,7 @@ For example:
 ```java
 public Game createGame(CreateGameRequest request) {
     Game game = gameFactory.create(request.name());
-    return gameRepository.save(game);
+    return gameRepository.create(game);
 }
 ```
 
@@ -586,7 +550,7 @@ Likewise:
 ```java
 public Deck createDeck() {
     Deck deck = deckFactory.create();
-    return deckRepository.save(deck);
+    return deckRepository.create(deck);
 }
 ```
 
