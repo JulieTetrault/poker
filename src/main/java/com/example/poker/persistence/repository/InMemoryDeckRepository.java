@@ -39,6 +39,11 @@ public class InMemoryDeckRepository implements DeckRepository {
                 deckRepository.save(deckEntityMapper.toEntity(deck, this.resolveGameEntity(deck))));
     }
 
+    @Override
+    public Deck getById(UUID id) {
+        return deckEntityMapper.fromEntity(this.getEntityById(id));
+    }
+
     private DeckEntity getEntityById(UUID id) {
         return deckRepository.findById(id).orElseThrow(() -> new NotFoundException("Deck", id));
     }

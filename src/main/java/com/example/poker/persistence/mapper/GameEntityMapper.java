@@ -10,17 +10,27 @@ import org.springframework.stereotype.Component;
 
 @Component
 public final class GameEntityMapper {
+    private final CardEntityMapper cardEntityMapper;
     private final DeckEntityMapper deckEntityMapper;
     private final PlayerEntityMapper playerEntityMapper;
 
     public GameEntityMapper(
-            DeckEntityMapper deckEntityMapper, PlayerEntityMapper playerEntityMapper) {
+            DeckEntityMapper deckEntityMapper,
+            PlayerEntityMapper playerEntityMapper,
+            CardEntityMapper cardEntityMapper) {
+        this.cardEntityMapper = cardEntityMapper;
         this.deckEntityMapper = deckEntityMapper;
         this.playerEntityMapper = playerEntityMapper;
     }
 
     public GameEntity toEntity(Game game) {
-        GameEntity gameEntity = new GameEntity(game.getId(), game.getName());
+        GameEntity gameEntity =
+                new GameEntity(
+                        game.getId(),
+                        game.getName(),
+                        game.getShoe().getCards().stream()
+                                .map(cardEntityMapper::toEntity)
+                                .toList());
 
         game.getShoe().getDecks().stream()
                 .map(deck -> deckEntityMapper.toEntity(deck, gameEntity))
@@ -37,7 +47,11 @@ public final class GameEntityMapper {
         return new Game(
                 entity.getId(),
                 entity.getName(),
-                new Shoe(entity.getDecks().stream().map(deckEntityMapper::fromEntity).toList()),
+                new Shoe(
+                        entity.getDecks().stream().map(deckEntityMapper::fromEntity).toList(),
+                        entity.getUndealtCards().stream()
+                                .map(cardEntityMapper::fromEntity)
+                                .toList()),
                 entity.getPlayers().stream()
                         .map(playerEntityMapper::fromEntity)
                         .collect(Collectors.toMap(Player::getId, Function.identity())));

@@ -31,6 +31,9 @@ public final class Deck {
     }
 
     public void setGameId(UUID gameId) {
+        if (this.gameId != null) {
+            throw new IllegalStateException("Deck already attached: " + id);
+        }
         this.gameId = gameId;
     }
 }

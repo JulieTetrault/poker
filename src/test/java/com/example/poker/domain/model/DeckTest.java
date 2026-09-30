@@ -1,6 +1,7 @@
 package com.example.poker.domain.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,6 +19,33 @@ class DeckTest {
 
         deck.setGameId(SOME_GAME_ID);
 
+        assertThat(deck.getGameId()).isEqualTo(SOME_GAME_ID);
+    }
+
+    @Test
+    void givenAttachedDeck__whenAssigningGameId__thenRejectAndPreserveOwnership() {
+        // GIVEN
+        Deck deck = new Deck(SOME_DECK_ID, SOME_GAME_ID, List.of());
+        UUID otherGameId = UUID.fromString("2c513c68-0356-4202-8f9f-259d45d84576");
+        // WHEN
+        var exception = assertThatThrownBy(() -> deck.setGameId(otherGameId));
+        // THEN
+        exception
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Deck already attached: " + SOME_DECK_ID);
+        assertThat(deck.getGameId()).isEqualTo(SOME_GAME_ID);
+    }
+
+    @Test
+    void givenAttachedDeck__whenAssigningSameGameId__thenReject() {
+        // GIVEN
+        Deck deck = new Deck(SOME_DECK_ID, SOME_GAME_ID, List.of());
+        // WHEN
+        var exception = assertThatThrownBy(() -> deck.setGameId(SOME_GAME_ID));
+        // THEN
+        exception
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Deck already attached: " + SOME_DECK_ID);
         assertThat(deck.getGameId()).isEqualTo(SOME_GAME_ID);
     }
 }

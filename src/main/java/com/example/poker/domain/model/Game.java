@@ -1,6 +1,5 @@
 package com.example.poker.domain.model;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,7 @@ public final class Game {
         this.id = id;
         this.name = name;
         this.shoe = shoe;
-        this.players = players;
+        this.players = new HashMap<>(players);
     }
 
     public UUID getId() {
@@ -43,16 +42,17 @@ public final class Game {
         players.put(player.getId(), player);
     }
 
-    public void removePlayer(UUID playerId) {
-        players.remove(playerId);
+    public void removePlayer(Player player) {
+        players.remove(player.getId());
     }
 
-    public List<Player> getPlayersByHandValue() {
-        return players.values().stream()
-                .sorted(
-                        Comparator.comparingInt(Player::getHandValue)
-                                .reversed()
-                                .thenComparing(Player::getName))
-                .toList();
+    public void addDeck(Deck deck) {
+        shoe.addDeck(deck);
+    }
+
+    public List<Card> dealCards(int cardCount, Player player) {
+        List<Card> dealt = shoe.dealCards(cardCount);
+        player.addCards(dealt);
+        return dealt;
     }
 }

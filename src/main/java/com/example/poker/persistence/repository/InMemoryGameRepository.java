@@ -38,6 +38,7 @@ public class InMemoryGameRepository implements GameRepository {
         gameRepository.delete(this.getEntityById(id));
     }
 
+    @Override
     public Game getById(UUID id) {
         return gameEntityMapper.fromEntity(this.getEntityById(id));
     }

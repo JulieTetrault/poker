@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.example.poker.domain.exception.NotFoundException;
+import com.example.poker.domain.exception.PlayerNotPartOfGameException;
 import com.example.poker.domain.model.Player;
 import com.example.poker.fixture.GameEntityFixture;
 import com.example.poker.fixture.PlayerEntityFixture;
@@ -107,6 +108,66 @@ class InMemoryPlayerRepositoryTest {
         var exception =
                 assertThatThrownBy(() -> inMemoryPlayerRepository.deleteById(SOME_PLAYER.getId()));
 
+        exception
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Player not found: " + SOME_PLAYER.getId());
+        verify(playerRepository).findById(SOME_PLAYER.getId());
+        verifyNoMoreInteractions(playerRepository);
+        verifyNoInteractions(playerEntityMapper, entityManager);
+    }
+
+    @Test
+    void givenMatchingGame__whenGettingPlayer__thenReturnPlayer() {
+        // GIVEN
+        given(playerRepository.findById(SOME_PLAYER_ENTITY.getId()))
+                .willReturn(Optional.of(SOME_PLAYER_ENTITY));
+        given(playerEntityMapper.fromEntity(SOME_PLAYER_ENTITY)).willReturn(SOME_PLAYER);
+        // WHEN
+        Player player =
+                inMemoryPlayerRepository.getByIdAndGameId(
+                        SOME_PLAYER_ENTITY.getId(), SOME_PLAYER_ENTITY.getGame().getId());
+        // THEN
+        assertThat(player).isSameAs(SOME_PLAYER);
+        verify(playerRepository).findById(SOME_PLAYER_ENTITY.getId());
+        verifyNoMoreInteractions(playerRepository);
+        verifyNoInteractions(entityManager);
+    }
+
+    @Test
+    void givenOtherGame__whenGettingPlayer__thenThrowPlayerNotPartOfGameException() {
+        // GIVEN
+        given(playerRepository.findById(SOME_PLAYER_ENTITY.getId()))
+                .willReturn(Optional.of(SOME_PLAYER_ENTITY));
+        // WHEN
+        var exception =
+                assertThatThrownBy(
+                        () ->
+                                inMemoryPlayerRepository.getByIdAndGameId(
+                                        SOME_PLAYER_ENTITY.getId(), SOME_GAME_ENTITY.getId()));
+        // THEN
+        exception
+                .isInstanceOf(PlayerNotPartOfGameException.class)
+                .hasMessage(
+                        "Player "
+                                + SOME_PLAYER_ENTITY.getId()
+                                + " is not part of game: "
+                                + SOME_GAME_ENTITY.getId());
+        verify(playerRepository).findById(SOME_PLAYER_ENTITY.getId());
+        verifyNoMoreInteractions(playerRepository);
+        verifyNoInteractions(playerEntityMapper, entityManager);
+    }
+
+    @Test
+    void givenMissingPlayer__whenGettingPlayer__thenThrowNotFoundException() {
+        // GIVEN
+        given(playerRepository.findById(SOME_PLAYER.getId())).willReturn(Optional.empty());
+        // WHEN
+        var exception =
+                assertThatThrownBy(
+                        () ->
+                                inMemoryPlayerRepository.getByIdAndGameId(
+                                        SOME_PLAYER.getId(), SOME_GAME_ENTITY.getId()));
+        // THEN
         exception
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Player not found: " + SOME_PLAYER.getId());

@@ -41,7 +41,7 @@ public final class GameFixture {
 
     public Game build() {
         Game game = new Game(id, name);
-        game.getShoe().getDecks().addAll(decks);
+        decks.forEach(game::addDeck);
         players.forEach(game::addPlayer);
         return game;
     }

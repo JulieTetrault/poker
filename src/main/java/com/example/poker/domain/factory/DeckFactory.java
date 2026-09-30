@@ -6,7 +6,9 @@ import com.example.poker.domain.model.Rank;
 import com.example.poker.domain.model.Suit;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class DeckFactory {
     private final IdGenerator idGenerator;
 
