@@ -494,6 +494,20 @@ suit counts, controlled Fisher–Yates behavior, and complete one/two-deck deals
   the developer's revised implementation plan.
 - No commit or push was performed.
 
+## Step 48 — Prepare the repositories commit and pull request
+
+Date: September 30, 2026
+
+The developer requested a commit, push, and PR for repository creation. Codex
+reviewed the existing changes and contribution rules and prepared the existing
+feat/repositories branch for a signed commit and pull request. Implementation
+changes from steps 45–47 were preserved.
+
+Actual verification: selected Java 26.0.2-tem with sdk env; Maven Wrapper
+validate and verify passed, including 44 tests with no failures, errors, or
+skips. git diff --check passed. Commit, push, and PR outcomes are reported
+in the task response; no merge is authorized.
+
 
 ## Step 13: Organize unit tests by domain class
 
@@ -1495,3 +1509,96 @@ domain model simplifications, fixtures, tests, and accompanying documentation.
   zero failures, errors, or skipped tests. The executable JAR was built.
 - Earlier blocked verification entries describe their historical state; the
   current full build succeeds, including all three entity persistence tests.
+
+
+## Step 45 — Create repositories for the three aggregate roots
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested repository creation as implementation step 3, following
+models/factories and entities/mappers. Codex moved API DTOs to step 4 and updated
+the repository plan and service examples to use explicit create/update operations.
+Added Spring-independent Game, Deck, and Player repository interfaces, Spring Data
+JPA repositories, and transactional Hibernate adapters using the existing mappers.
+Game and Player support deletion; Deck supports creation and updates only.
+Missing updates and deletions throw the shared domain NotFoundException with the
+aggregate type and ID before mapping or writing. Parent game relationships use
+managed JPA references. DeckEntityMapper now preserves null game relationships
+when restoring unattached decks.
+
+Added fixture-based Mockito tests matching the existing test structure, with
+GIVEN/WHEN/THEN sections, mocked persistence/mapping dependencies, persisted return
+value assertions, and no-write assertions for missing aggregates. Added a mapper
+regression test for unattached decks. Spring Boot's managed JPA starter replaces
+the standalone JPA/test-only Hibernate dependencies; H2 becomes a runtime dependency
+so Spring can wire and use the repositories. No explicit database configuration,
+API endpoints, or domain behavior was added.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial spotless:apply, validate, and verify passed; all 42 tests passed.
+- Final spotless:apply, validate, and verify passed after the mapper regression
+  was added: all 43 tests passed, with zero failures, errors, or skipped tests.
+- Local links in the changed documentation and git diff --check passed.
+- No commit, push, or merge was performed.
+
+
+## Step 46 — Align repository tests with the developer's refactoring
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer renamed and refactored the repositories and requested test repairs.
+Codex renamed the test classes to InMemoryGameRepositoryTest,
+InMemoryDeckRepositoryTest, and InMemoryPlayerRepositoryTest and fixed the Game
+adapter injection to target the concrete implementation. Updated mock setup to
+use findById for update existence checks and the single-argument deck mapper for
+creation. Player update tests use a different incoming game ID and verify that
+the stored game relationship is used without resolving a new JPA reference.
+Added Game getById success/missing tests and an unattached Deck update test.
+Preserved production behavior; removed the unused Game import in DeckEntityMapper
+and applied Spotless to Java, including the developer's refactored files.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial focused repository tests passed: 16 tests, no failures/errors/skips.
+- Final spotless:apply, validate, and verify passed: all 46 tests passed,
+  including 17 repository tests, with zero failures, errors, or skipped tests.
+- git diff --check passed.
+- No commit or push was performed.
+
+
+## Step 47 — Match the simplified repository test structure
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested that Game and Player repository tests follow the exact
+structure of the simplified Deck repository test. Codex aligned fixture constants
+(SOME_GAME/PLAYER, SOME_PERSISTED_GAME/PLAYER, and named entity fixtures), explicit
+mock and subject field names, method naming, local result/exception names, and
+setup/action/assertion blocks without GIVEN/WHEN/THEN comments. Fixture identities
+are independent, with Player's stored game explicitly provided for update tests.
+Existing Game and Player test cases were retained. Fixed the attached Deck update
+case to pass SOME_DECK_ATTACHED_TO_GAME, matching its mock setup. Removed the
+obsolete @Override on Game getById after its interface declaration was removed
+by the developer; its behavior is unchanged. Also corrected the unattached Deck
+mapper fixture to explicitly use a null game after full verification exposed
+the mismatch. Spotless applied Java formatting.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- Initial verify exposed the obsolete getById override annotation at compilation.
+  The next run passed all repository tests but exposed the unattached mapper
+  fixture mismatch. After correcting the fixture, final spotless:apply, validate,
+  and verify passed: all 44 tests passed with no failures, errors, or skips.
+- git diff --check passed.
+- No commit or push was performed.

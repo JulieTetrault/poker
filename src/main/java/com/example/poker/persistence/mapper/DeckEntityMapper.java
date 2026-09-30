@@ -13,6 +13,10 @@ public final class DeckEntityMapper {
         this.cardEntityMapper = cardEntityMapper;
     }
 
+    public DeckEntity toEntity(Deck deck) {
+        return toEntity(deck, null);
+    }
+
     public DeckEntity toEntity(Deck deck, GameEntity gameEntity) {
         return new DeckEntity(
                 deck.getId(),
@@ -23,7 +27,7 @@ public final class DeckEntityMapper {
     public Deck fromEntity(DeckEntity entity) {
         return new Deck(
                 entity.getId(),
-                entity.getGame().getId(),
+                entity.getGame() == null ? null : entity.getGame().getId(),
                 entity.getCards().stream().map(cardEntityMapper::fromEntity).toList());
     }
 }
