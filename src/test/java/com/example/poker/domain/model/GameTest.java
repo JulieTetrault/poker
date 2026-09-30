@@ -62,8 +62,8 @@ class GameTest {
     void givenGameWithDeck__whenAddingDeck__thenBothDecksAreIncluded() {
         // GIVEN
         Game game = game();
-        Deck first = new DeckFixture().withGameId(SOME_GAME_ID).withCards(HIGHEST_CARDS).build();
-        Deck second = new DeckFixture().withGameId(SOME_GAME_ID).withCards(LOWEST_CARDS).build();
+        Deck first = new DeckFixture().withGameId(SOME_GAME_ID).build();
+        Deck second = new DeckFixture().withGameId(SOME_GAME_ID).build();
         game.addDeck(first);
         // WHEN
         game.addDeck(second);
@@ -93,7 +93,7 @@ class GameTest {
         Game game = game();
         Card first = new CardFixture().withRank(Rank.ACE).build();
         Card second = new CardFixture().withRank(Rank.TWO).build();
-        Deck deck = new DeckFixture().withCards(List.of(first, second, first)).build();
+        Deck deck = new DeckFixture().build();
         Player selected =
                 new PlayerFixture().withGameId(SOME_GAME_ID).withCards(List.of(second)).build();
         Player other = new PlayerFixture().withGameId(SOME_GAME_ID).build();
@@ -109,7 +109,6 @@ class GameTest {
         assertThat(other.getCards()).isEmpty();
         assertThat(game.getPlayers()).containsExactlyInAnyOrder(selected, other);
         verify(shoe).dealCards(2);
-        assertThat(deck.getCards()).containsExactly(first, second, first);
     }
 
     @Test
@@ -119,7 +118,7 @@ class GameTest {
         Card card = new CardFixture().build();
         Player player = new PlayerFixture().withGameId(SOME_GAME_ID).build();
         game.addPlayer(player);
-        game.addDeck(new DeckFixture().withCards(List.of(card, card)).build());
+        game.addDeck(new DeckFixture().build());
         given(shoe.dealCards(3)).willReturn(List.of(card, card));
         given(shoe.dealCards(1)).willReturn(List.of());
         // WHEN
@@ -137,7 +136,7 @@ class GameTest {
         // GIVEN
         Game game = game();
         Card card = new CardFixture().build();
-        game.addDeck(new DeckFixture().withCards(List.of(card)).build());
+        game.addDeck(new DeckFixture().build());
         Player player = new PlayerFixture().withGameId(SOME_GAME_ID).build();
         given(shoe.dealCards(1)).willReturn(List.of(card));
         // WHEN

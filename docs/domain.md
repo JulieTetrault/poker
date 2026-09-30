@@ -75,7 +75,7 @@ classDiagram
         <<aggregate root>>
         +UUID id
         +UUID gameId
-        +Card[] cards
+        +Card[] generateCards()
     }
 
     class Card {
@@ -101,7 +101,7 @@ classDiagram
     Shoe --> CardShuffler : delegates
     Game "1" *-- "0..*" Player : players
 
-    Deck "1" *-- "52" Card : cards
+    Deck ..> Card : generates 52 on attachment
 
     Player "1" o-- "0..*" Card : cards
 
@@ -120,9 +120,9 @@ Game owns players and one Shoe. Shoe owns the ordered undealt
 card occurrences, delegating to CardDealer, CardCounter, and CardShuffler. It has
 no separate identity, factory, repository, or persistence entity. GameEntity
 persists the undealt list directly; its mapper restores Shoe from that state.
-Deck rows store only identity and attachment through game_id. DeckFactory
-reconstructs the standard 52 cards using the persisted identity, without generating
-a new ID. Attachment is saved separately within the game service transaction.
+Deck rows store only identity and attachment through game_id.
+DeckEntityMapper restores those two values without any factory.
+Shoe.addDeck invokes Deck.generateCards to create the standard 52 cards. Attachment is saved separately within the game service transaction.
 Deleting a game explicitly deletes its attached deck records.
 
 ## Domain Notes
@@ -134,9 +134,9 @@ Deleting a game explicitly deletes its attached deck records.
 - `Card` is an immutable value object containing only `suit` and `rank`, with no identity or deck reference.
 - Cards with the same suit/rank compare as equal values. Ordered card lists retain separate occurrences, including duplicate faces from multiple decks.
 - Card values are stored as ordered JSON arrays in player rows and in the
-  game row for undealt cards; deck rows do not store cards. There is no Card table.
-- Shoe tracks undealt cards independently of the original deck cards. Adding a
-  deck appends its cards; dealing removes the next available occurrences.
+  game row for undealt cards; deck rows contain no cards. There is no Card table.
+- Deck holds identity and ownership only. Adding a deck generates and appends
+  its 52 standard cards; dealing removes the next available occurrences.
   Removing players never returns dealt cards to the undealt list.
 - `Player` references its game through `gameId`.
 - `Shoe` owns the domain behavior related to undealt cards: adding decks, shuffling, dealing, and remaining-card counts.

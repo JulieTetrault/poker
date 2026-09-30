@@ -2489,3 +2489,53 @@ PokerApplicationTests and updating README; lifecycle coverage uses its own class
   failures, errors, or skips.
 - Changed documentation link targets exist and git diff --check passed.
 - No commit or push was performed for this step.
+
+## Step 79 — Restore value mapping for stored deck cards
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested reverting DeckEntityMapper and keeping factories out of
+all mappers. Codex restored DeckEntityMapper exactly to its pre-simplification
+implementation using CardEntityMapper. Restored DeckEntity card storage and the
+related fixture and mapper/entity tests required by that implementation. Removed
+the now-unused explicit-ID DeckFactory overload and its test. GameEntity and Shoe
+still omit deck collections; attachment persistence and explicit deletion remain.
+Updated documentation and preserved the developer's staged deletion of
+DeckLifecyclePersistenceTest.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 71 tests passed with no
+  failures, errors, or skips.
+- DeckEntityMapper matches commit d703149 exactly; no mapper references a factory.
+- git diff --check passed. No commit or push was performed for this step.
+
+## Step 80 — Generate standard deck cards only when adding to a game
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving card generation from DeckFactory into Deck and
+performing it when adding a deck to a game. Codex reduced Deck to identity and
+ownership state, added Deck.generateCards(), and made Shoe.addDeck generate one
+standard card list for appending and counting. DeckFactory supplies only new IDs.
+DeckEntity stores only ID and game ownership. DeckEntityMapper maps those values
+without factories, card mapping, or card generation. Existing attachment writes
+and deletion behavior remain in place.
+
+Updated fixtures, factory/mapper tests, and domain documentation. Moved standard
+52-face coverage to DeckTest and added real Shoe coverage for two decks, duplicate
+occurrences, exhaustion, and remaining counts. Preserved the developer's staged
+removal of DeckLifecyclePersistenceTest.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Final spotless:apply, validate, and verify passed; all 73 tests passed with no
+  failures, errors, or skips.
+- Documentation link targets exist and git diff --check passed.
+- No commit or push was performed for this step.

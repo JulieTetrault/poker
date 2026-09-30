@@ -95,8 +95,8 @@ class CardCounterTest {
     @Test
     void givenTwoDecks__whenRemovingOne__thenRetainOtherDeckCounts() {
         // GIVEN
-        List<Card> first = new DeckFixture().build().getCards();
-        List<Card> second = new DeckFixture().build().getCards();
+        List<Card> first = new DeckFixture().build().generateCards();
+        List<Card> second = new DeckFixture().build().generateCards();
         cardCounter.addCards(first);
         cardCounter.addCards(second);
         // WHEN
@@ -137,7 +137,7 @@ class CardCounterTest {
     @Test
     void givenExistingCounts__whenAddingAndRemovingEmptyLists__thenPreserveCounts() {
         // GIVEN
-        cardCounter.addCards(new DeckFixture().build().getCards());
+        cardCounter.addCards(new DeckFixture().build().generateCards());
         // WHEN
         cardCounter.addCards(List.of());
         cardCounter.removeCards(List.of());

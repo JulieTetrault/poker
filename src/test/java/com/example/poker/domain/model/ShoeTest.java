@@ -37,9 +37,9 @@ class ShoeTest {
         assertThat(shoe.getCards())
                 .containsExactlyElementsOf(
                         java.util.stream.Stream.concat(
-                                        List.of(card).stream(), deck.getCards().stream())
+                                        List.of(card).stream(), deck.generateCards().stream())
                                 .toList());
-        verify(cardCounter).addCards(deck.getCards());
+        verify(cardCounter).addCards(deck.generateCards());
         verifyNoInteractions(cardDealer, cardShuffler);
     }
 
@@ -88,5 +88,25 @@ class ShoeTest {
         assertThat(suitCounts).isSameAs(suits);
         assertThat(faceCounts).isSameAs(faces);
         verifyNoInteractions(cardDealer, cardShuffler);
+    }
+
+    @Test
+    void givenTwoDecks__whenAddingAndExhausting__thenDealAllGeneratedOccurrencesOnce() {
+        // GIVEN
+        Shoe shoe = new Shoe();
+        Deck first = new DeckFixture().build();
+        Deck second = new DeckFixture().build();
+        // WHEN
+        shoe.addDeck(first);
+        shoe.addDeck(second);
+        // THEN
+        assertThat(shoe.getCards()).hasSize(104);
+        assertThat(shoe.getUndealtSuitCardsCount().values()).containsOnly(26);
+        List<Card> dealt = shoe.dealCards(104);
+        assertThat(dealt).hasSize(104);
+        assertThat(dealt.stream().distinct()).hasSize(52);
+        assertThat(shoe.getCards()).isEmpty();
+        assertThat(shoe.dealCards(1)).isEmpty();
+        assertThat(shoe.getUndealtSuitCardsCount().values()).containsOnly(0);
     }
 }

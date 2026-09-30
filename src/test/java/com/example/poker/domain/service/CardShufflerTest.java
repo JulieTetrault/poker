@@ -8,10 +8,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.example.poker.domain.model.Card;
-import com.example.poker.domain.model.Deck;
 import com.example.poker.domain.model.Rank;
 import com.example.poker.fixture.CardFixture;
-import com.example.poker.fixture.DeckFixture;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,8 +26,8 @@ class CardShufflerTest {
         Card first = new CardFixture().withRank(Rank.TWO).build();
         Card second = new CardFixture().withRank(Rank.THREE).build();
         Card third = new CardFixture().withRank(Rank.FOUR).build();
-        Deck deck = new DeckFixture().withCards(List.of(first, second, third)).build();
-        List<Card> cards = new ArrayList<>(deck.getCards());
+        List<Card> original = List.of(first, second, third);
+        List<Card> cards = new ArrayList<>(original);
         RandomGenerator random = mock(RandomGenerator.class);
         given(random.nextInt(3)).willReturn(0);
         given(random.nextInt(2)).willReturn(0);
@@ -37,7 +35,7 @@ class CardShufflerTest {
         cardShuffler.shuffle(cards, random);
         // THEN
         assertThat(cards).containsExactly(second, third, first);
-        assertThat(deck.getCards()).containsExactly(first, second, third);
+        assertThat(original).containsExactly(first, second, third);
         verify(random).nextInt(3);
         verify(random).nextInt(2);
         verifyNoMoreInteractions(random);

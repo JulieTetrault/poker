@@ -38,8 +38,9 @@ public final class Shoe {
     }
 
     public void addDeck(Deck deck) {
-        cards.addAll(deck.getCards());
-        cardCounter.addCards(deck.getCards());
+        List<Card> deckCards = deck.generateCards();
+        cards.addAll(deckCards);
+        cardCounter.addCards(deckCards);
     }
 
     public List<Card> dealCards(int cardCount) {
