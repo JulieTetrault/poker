@@ -494,6 +494,7 @@ suit counts, controlled Fisher–Yates behavior, and complete one/two-deck deals
   the developer's revised implementation plan.
 - No commit or push was performed.
 
+
 ## Step 13: Organize unit tests by domain class
 
 Date: September 29, 2026
@@ -716,7 +717,7 @@ Date: September 29, 2026
 
 The developer requested a shoe fixture alongside the existing player/card
 fixtures. Codex added ShoeFixture with Faker-generated shoe/game UUIDs,
-fluent `withId`, `withGameId`, and `withDecks` overrides, and `build()`.
+fluent `withId`, `withGame`, and `withDecks` overrides, and `build()`.
 Both construction with `new ShoeFixture()` and `ShoeFixture.builder()` are
 supported. The default shoe has no decks; provided decks are copied into each
 built shoe's collection using the current simplified model, without adding
@@ -845,3 +846,652 @@ future implementation work.
 - `./mvnw clean verify` passed: 15 tests, zero failures/errors/skips, executable
   JAR packaging succeeded.
 - Implementation-plan local links resolve; `git diff --check` passed.
+
+## Step 25: Create JPA entities and persistence mappers in implementation step 2
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested `feat/entities-models`, combining JPA entities and
+persistence mapping into implementation-plan step 2 and directly implementing
+both directions with `toEntity` and `fromEntity`. Codex created the branch from
+main, installed the repository hook, moved the former entity/mapper steps into
+step 2, and renumbered the remaining steps.
+
+Codex added GameEntity, ShoeEntity, DeckEntity, CardEntity, PlayerEntity, and
+HandEntity plus six stateless persistence mappers. Domain models remain
+unchanged and contain no JPA annotations. Factory `rehydrate` methods restore
+existing IDs/state without calling creation methods or generators. HandEntity
+uses its player's UUID; Hand mapping accepts that owner ID. Names and IDs are
+stored, enums use strings, collections retain order, and derived card/hand
+values remain domain calculations. Game mapping shares CardEntity instances
+between original decks and hands by UUID to support persistence and merge.
+
+Ordered collections use unidirectional join tables alongside the domain's
+scalar ownership IDs. Hands reference deck-owned cards without cascading card
+removal; deleting a player removes its hand. Hibernate and H2 are test-scoped,
+with only Jakarta Persistence API added to production dependencies. Versions
+are managed by the existing explicitly pinned Spring Boot parent. Runtime
+repositories and datasource configuration remain later implementation steps.
+The current Shoe exposes no undealt-order/discard state, so extending those
+mappings remains part of implementing the corresponding domain behavior.
+
+Codex consulted the [Jakarta Persistence specification](https://jakarta.ee/specifications/persistence/3.2/jakarta-persistence-spec-3.2)
+and added mapper round-trip and actual Hibernate/H2 tests without Spring test
+contexts. An initial focused run exposed null collection positions with
+read-only joins; join-table mappings corrected that failure.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` selected with `sdk env` and Maven Wrapper.
+- Initial focused run: three mapper cases passed; two database cases failed
+  on null collection positions. After the mapping fix, all five passed.
+- Final `./mvnw spotless:apply` and `./mvnw validate` passed, with zero
+  Checkstyle violations.
+- Final `./mvnw verify` passed: 21 tests, zero failures/errors/skips, and
+  successful executable JAR packaging. Six new cases cover mapper round trips,
+  empty games, standalone decks, persist/reload/merge, player removal without
+  deleting original cards, and complete game deletion with held cards.
+- Implementation-plan local links resolve, new source files have no trailing
+  whitespace, and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 26: Assign rehydration exclusively to persistence mappers
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer clarified that factories must never have rehydration methods;
+restoration belongs to persistence mappers. This supersedes step 25's factory
+rehydration decision. Codex removed all four factory `rehydrate` methods and
+moved their restoration logic into the corresponding mapper `fromEntity`
+methods. Factories now retain only new-object creation responsibilities.
+Mappers construct domain models with persisted IDs and populate attachment,
+player, deck, and hand state directly, without factory dependencies.
+
+Codex updated every factory-rehydration instruction, example, flow, and final
+architecture rule in the implementation plan. Existing round-trip and JPA tests
+continue to verify that identities, card state, collections, and relationships
+survive restoration. Other work on `feat/entities-models` is preserved.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` and `./mvnw validate` passed, zero lint violations.
+- `./mvnw verify` passed: 21 tests, zero failures/errors/skips, successful JAR
+  packaging, including all mapper and actual Hibernate/H2 persistence cases.
+- Plan local links and `git diff --check` passed. Confirmed no persistence
+  mapper imports factories and no factory contains a `rehydrate` method.
+- No commit or push was performed.
+
+## Step 27: Rename entity mappers and separate entity tests
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested the `EntityMapper` naming convention and separate tests
+for every entity, matching the domain-test structure. Codex renamed all six
+mapper classes/files to `*EntityMapper`, updated references and mapper-test
+names, and revised the implementation plan. `toEntity` and `fromEntity` retain
+their behavior; rehydration remains exclusively in mappers.
+
+Codex replaced PersistenceEntitiesTest with GameEntityTest, ShoeEntityTest,
+DeckEntityTest, CardEntityTest, PlayerEntityTest, and HandEntityTest. Shared
+EntityTestSupport contains only JPA lifecycle setup and populated-game setup.
+Existing restoration, merge, deletion, card-retention, and standalone-deck
+coverage is preserved. Focused tests additionally check shoe deck ordering,
+hand references/removal, and string enum storage. Tests retain GIVEN/WHEN/THEN
+blocks and use actual Hibernate/H2 without additional Spring contexts.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; used Maven Wrapper.
+- `./mvnw spotless:apply` and `./mvnw validate` passed, zero lint violations.
+- Initial `./mvnw clean verify` ran 25 tests: 24 passed; the new standalone-hand
+  test failed because its setup used transient card instances. The setup now
+  resolves references to the deck's already-managed cards before persisting
+  the hand. This leaves production mapping unchanged.
+- Final `./mvnw verify` passed: all 25 tests, zero failures/errors/skips, and
+  successful executable JAR packaging.
+- Implementation-plan local links, rename-reference checks, new Java whitespace
+  checks, and `git diff --check` passed. Cleaning removed obsolete compiled
+  test classes before the renamed/split suites ran.
+- No commit or push was performed.
+
+## Step 28: Store card values as arrays in deck and hand rows
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing the Card table and independent card identity,
+with card arrays stored in hand/deck rows. Codex removed CardEntity, its entity
+mapper, and the card-table test. This supersedes the card-entity relationships
+and identity assumptions recorded in steps 25–27.
+
+Card is now an immutable domain value with `deckId`, suit, and rank. The original
+deck ID remains to distinguish the same face across different decks; there is
+no generated card UUID. Codex updated DeckFactory, CardFixture, factory tests,
+the domain UML/notes, the Card OpenAPI schema, and the implementation plan.
+
+DeckEntity and HandEntity now use List<CardValue> fields stored as ordered JSON
+text in their own non-null `cards` LOB columns. CardListConverter implements
+JPA AttributeConverter; CardValueMapper maps card values separately from entity
+mappers. No Card table, card association, or card join table remains. A JPA
+ElementCollection would introduce collection tables, so it was not selected
+for the requested inline storage. JSON conversion avoids native SQL array
+requirements and uses the existing Boot-managed Jackson version, explicitly
+declared as a direct dependency. Card values are serializable so converted
+mutable lists can be snapshotted for persistence dirty checking.
+
+Codex consulted the [JPA AttributeConverter documentation](https://jakarta.ee/specifications/persistence/3.2/apidocs/jakarta.persistence/jakarta/persistence/attributeconverter).
+Game mapping no longer shares card entities by UUID. Existing entity tests were
+adapted to value collections; new converter and database cases check ordering,
+repeated values, deck provenance, empty/null conversion, malformed JSON,
+managed hand updates, and inline deck storage without card tables. Removing a
+hand leaves the original deck array intact. Undealt/discard state remains
+future domain-behavior work, as previously documented.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env` and used the Maven Wrapper.
+- Initial focused entity/mapper tests passed all nine cases after the conversion.
+- Formatting and validation passed with zero Checkstyle violations.
+- A subsequent clean build stopped at two new native-query test assignments:
+  JPA returns Object, requiring explicit String casts. Codex corrected these
+  test compilation errors before final verification.
+- Final `./mvnw spotless:apply`, `./mvnw validate`, and `./mvnw verify` passed:
+  30 tests, zero failures/errors/skips, successful executable JAR packaging.
+- Actual H2 checks confirm arrays occupy the deck/hand rows, managed list edits
+  survive reload, and POKER_CARDS/DECK_CARDS/HAND_CARDS tables are absent.
+- OpenAPI parses as JSON, every internal schema reference resolves, and Card
+  no longer defines/requires an ID. Domain/plan local links, new Java whitespace
+  checks, and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 29: Document player-owned cards without a Hand model
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested revising domain.md and OpenAPI to replace Hand with a
+simple Player.cards list. Codex removed the Hand class and relationship from
+the UML, added `List<Card> cards` directly to Player, and described card receipt
+and derived hand totals as Player responsibilities. Persistence notes describe
+card arrays in deck and player rows for this revised model.
+
+Codex removed the Hand OpenAPI schema and replaced Player's required `hand`
+property with a required `cards` array of Card values. The existing hand-value
+response names and numeric totals remain applicable; they describe a computed
+value, not a separate Hand resource. This step changes documentation only;
+Java models and persistence implementation still need alignment with the new
+model in a subsequent implementation change.
+
+### Actual verification
+
+- Parsed OpenAPI JSON and verified all internal references resolve.
+- Verified Player requires a Card array directly, with no Hand schema/reference.
+- Checked domain.md local links and `git diff --check`.
+- Java/build checks were not run for this documentation-only change.
+- No commit or push was performed.
+
+## Step 30: Remove Hand from Java and persistence
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing the remaining Hand implementation after the
+model-documentation revision. Codex deleted Hand, HandEntity, HandEntityMapper,
+and their test classes. Player now owns an initially empty List<Card>, exposes
+getCards(), receives cards into that list, and computes getHandValue() directly
+from card ranks. The computed hand-value operation remains part of the API.
+
+PlayerEntity stores its own converted JSON card array in the player row, with
+no hand relationship or table. PlayerEntityMapper maps cards directly with
+CardValueMapper, and factories remain creation-only. Codex updated all callers,
+JPA test configuration, mapper assertions, game-deletion/player-removal tests,
+and the implementation plan. Empty-card total coverage moved to PlayerTest;
+managed array ordering/provenance coverage moved to PlayerEntityTest. Existing
+player card-accumulation and aggregate-removal tests cover the behavior formerly
+verified in Hand tests. Schema checks now also assert POKER_HANDS is absent.
+
+### Actual verification
+
+- Java `26.0.2-tem` selected with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` and `./mvnw validate` passed with zero lint violations.
+- `./mvnw clean verify` passed: 28 tests, zero failures/errors/skips, successful
+  executable JAR packaging. The clean build removed stale Hand classes/tests.
+- Actual H2 tests confirm card arrays persist/update in player rows, removal
+  preserves deck values, and no Hand table is created.
+- Confirmed no Hand/HandEntity/HandEntityMapper types or getHand() calls remain
+  under src. Plan local links, revised OpenAPI schema, and `git diff --check`
+  passed. The implementation now matches step 29's revised model.
+- No commit or push was performed.
+
+## Step 31: Keep Shoe in the domain and persist game decks directly
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer designated Game, Player, and Deck as aggregate roots, retaining
+Shoe for domain behavior while removing its persistence entity and factory.
+Codex removed ShoeEntity, ShoeEntityMapper, and ShoeFactory plus their dedicated
+tests. GameFactory creates the empty domain Shoe directly and obtains both
+existing game/shoe identities from IdGenerator.
+
+GameEntity now stores an ordered DeckEntity collection through game_decks.
+The existing shoe UUID is retained as a scalar game-row field, not an entity
+association, allowing GameEntityMapper.fromEntity to rebuild the domain Shoe
+with unchanged identity and Deck.shoeId relationships. The read path generates
+no identifiers and uses no factories. Existing ownership/cascade behavior is
+preserved; standalone decks still have null shoe IDs. No shoe table or
+shoe_decks join table remains.
+
+Codex updated factory and Spring wiring tests, migrated the two-deck ordering
+case into GameEntityTest, adapted mapper/deletion assertions, and expanded the
+schema check to exclude shoe tables. Domain UML and a dedicated aggregate-root
+section document Game/Player/Deck roots and the internal Shoe model. The plan
+reflects three entities, three creation factories, and direct game-deck mapping.
+OpenAPI's domain Shoe representation still applies and was preserved.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` using `sdk env`; used Maven Wrapper.
+- `./mvnw spotless:apply` and `./mvnw validate` passed, zero lint violations.
+- `./mvnw clean verify` passed: 27 tests, zero failures/errors/skips, and
+  successful executable JAR packaging. Cleaning removed stale Shoe entity,
+  mapper, factory, and test classes.
+- Actual Hibernate/H2 cases verify ordered deck persistence, scalar shoe-ID
+  restoration, aggregate merge/deletion, standalone decks, and absence of shoe
+  and shoe-deck tables. Factory tests verify direct shoe creation and wiring.
+- Removed-type reference checks, documentation links, new-source whitespace,
+  and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 32: Remove Shoe identifiers and attach decks directly to games
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested replacing Deck.shoeId with gameId and removing both
+identifiers from Shoe. Codex renamed Deck/DeckEntity ownership fields, accessors,
+and mapping to gameId, with nullable deck game_id for unattached decks. Shoe
+now contains only its deck collection. GameEntity's scalar shoe_id is removed;
+GameEntityMapper reconstructs an identifier-free Shoe from the persisted decks.
+GameFactory requests only the game ID and creates Shoe with its no-argument
+constructor. This supersedes step 31's retained scalar shoe-identity decision.
+
+Codex updated all fixtures and callers, constructor/ownership assertions,
+factory/Spring tests, and persistence tests. GameFactoryTest checks that creation
+requests exactly one ID. The two-deck database case verifies direct game
+ownership and retained order. Domain UML/notes now show Deck pointing to Game,
+Shoe without identifiers, and the same three aggregate roots. OpenAPI Deck
+uses nullable gameId, and its Shoe schema contains only decks. The implementation
+plan and examples match the revised model.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` and `./mvnw validate` passed, zero lint violations.
+- `./mvnw clean verify` passed: 27 tests, zero failures/errors/skips, successful
+  executable JAR packaging, including direct deck ownership, aggregate
+  round trips/merge/deletion, and standalone nullable game IDs.
+- OpenAPI parses and internal references resolve. Its Shoe schema exposes only
+  decks and Deck requires nullable gameId. No shoeId/getShoeId/shoe_id references
+  remain under src. Domain/plan local links and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 33: Make cards suit/rank values without deck references
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing deckId from Card and updating domain.md and
+OpenAPI. Codex removed it from the domain Card, persistence CardValue, value
+mapper, DeckFactory card generation, and CardFixture. Cards now contain only
+suit and rank; ordered lists preserve repeated occurrences without tracking
+originating decks. Deck identity and its game attachment remain separate.
+
+Codex updated the domain UML/notes and implementation plan, removed deckId from
+the Card and GetPlayerCardResponse schemas and card response example, and
+preserved deckId in deck-attachment requests. Tests now check value equality,
+array order/multiplicity, and serialized cards without deck references.
+
+The developer's recent Game constructor change initializes its own Shoe.
+Codex preserved that constructor and revised GameEntityMapper restoration and
+persistence-test setup to populate the actual game-owned shoe. Previously those
+paths populated a separate Shoe, which discarded deck state. Spotless also
+formatted the developer's existing GameTest edits.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` and `./mvnw validate` passed, zero lint violations.
+- `./mvnw clean verify` passed: all 27 tests, zero failures/errors/skips,
+  successful executable JAR packaging. Round trips preserve game-owned decks
+  and card value lists; converter/database checks preserve order and repeated
+  values with no serialized card ID/deck reference.
+- OpenAPI parses, internal references resolve, Card/GetPlayerCardResponse contain
+  only suit/rank, and card examples omit deckId. Deck attachment retains its
+  required deckId. Domain/plan local links and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 34: Add DeckFixture and use it in DeckEntityTest
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested DeckFixture and its use in DeckEntityTest. Codex added
+it alongside the existing constructor-based fluent fixtures, with a Faker UUID,
+a default unattached deck containing all 52 suit/rank combinations, and withId,
+withGameId, and withCards overrides. Each built deck receives its own card list.
+Both DeckEntityTest cases now use the fixture instead of DeckFactory. Existing
+persistence assertions remain; the setup/restore declaration uses the domain
+Deck import and explicit GIVEN/WHEN/THEN blocks. No production changes or
+additional dependencies were needed.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed, also formatting current developer edits in
+  entity classes and PlayerEntityTest. `./mvnw validate` passed with zero lint
+  violations. Compilation includes the new fixture and migrated test cases.
+- Focused `./mvnw -Dtest=DeckEntityTest test` could not initialize Hibernate:
+  the current GameEntity join table and DeckEntity entity table are both named
+  decks, producing incompatible primary-key/foreign-key column counts.
+- `./mvnw verify` failed on the same setup conflict in the three entity test
+  classes: 23 reported cases, 20 passed and three setup errors. The fixture's
+  persistence cases therefore did not execute. Current mapping changes were
+  preserved; no production behavior was changed for this fixture task.
+- Fixture-usage checks, new-source whitespace checks, and `git diff --check`
+  passed. No commit or push was performed.
+
+## Step 35: Add GameFixture
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested GameFixture. Codex added a constructor-based fluent
+fixture matching the existing fixtures, with Faker-generated UUID/name defaults
+and empty deck/player lists. withId, withName, withDecks, and withPlayers allow
+explicit overrides. build() creates a fresh Game, populates its owned Shoe,
+and adds supplied players through Game.addPlayer. Supplied objects and their
+ownership IDs are preserved, consistent with ShoeFixture. No existing tests
+were migrated, and no production changes or dependencies were added.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed, also formatting existing developer edits in
+  DeckEntityTest and PlayerEntityTest.
+- `./mvnw validate` and `./mvnw verify` stopped at the existing PlayerEntityTest
+  wildcard domain-model import (AvoidStarImport); tests did not run. That user
+  edit was preserved.
+- Separate `./mvnw compiler:testCompile` passed, compiling all 22 test source
+  files including GameFixture. This confirms compilation, not test execution
+  or a successful full lifecycle build.
+- GameFixture whitespace checks and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 36: Generate fixed card values inside Deck
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving generateCards from DeckFactory into Deck because
+cards contain no identifiers, simplifying DeckFixture, and moving composition
+tests from the factory into the model. Codex added Deck(UUID id), which delegates
+to the existing state constructor using a private static generateCards method.
+DeckFactory now only obtains the ID and calls that constructor. The existing
+Deck(UUID id, List<Card>) constructor remains for direct mapper restoration and
+fixture overrides and never generates replacement cards.
+
+Codex removed duplicate card generation from DeckFixture, retaining ID/game-ID
+and card-list overrides. Default fixture construction uses new Deck(id).
+DeckTest now verifies all 52 distinct suit/rank combinations and unattached
+initial state. A restoration test verifies supplied card order/state is retained.
+DeckFactoryTest checks identity generation only; all changed test bodies include
+GIVEN/WHEN/THEN markers. Domain notes and the implementation plan document the
+new responsibility without introducing factory rehydration methods.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` stopped at the existing PlayerEntityTest
+  wildcard import (AvoidStarImport). The full lifecycle build did not pass.
+- Separate focused execution with `./mvnw compiler:compile compiler:testCompile
+  dependency:properties surefire:test -Dtest=DeckTest,DeckFactoryTest,DeckEntityMapperTest`
+  passed all five cases, zero failures/errors/skips. This verifies card
+  composition, supplied-state construction, game assignment, factory identity,
+  and mapper round trips; it is not a passing full build.
+- Generation-ownership checks, fixture simplification checks, documentation
+  local links, and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 37: Revert card generation back to DeckFactory
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer reconsidered step 36 and requested reverting it. Codex moved the
+private generateCards method back into DeckFactory, removed Deck's generating
+constructor, restored DeckFixture's original default card construction, and
+moved 52-card composition assertions back into DeckFactoryTest. DeckTest again
+covers game assignment. The extra supplied-state test introduced in step 36
+was removed as part of reverting that change; mapper round-trip coverage remains.
+Domain notes and the plan are restored to the factory-owned generation design.
+Other existing model, mapper, fixture, and developer edits are preserved.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` remain unsuccessful because of the
+  existing PlayerEntityTest wildcard import (AvoidStarImport).
+- Separate focused compilation/test execution using `./mvnw compiler:compile
+  compiler:testCompile dependency:properties surefire:test
+  -Dtest=DeckTest,DeckFactoryTest,DeckEntityMapperTest` passed all three cases,
+  zero failures/errors/skips. Full lifecycle verification remains blocked.
+- Factory-generation/revert checks, documentation local links, and
+  `git diff --check` passed. No commit or push was performed.
+
+## Step 38: Add PlayerEntityMapperTest and CardEntityMapperTest
+
+Date: September 29, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested the missing PlayerEntityMapper and CardEntityMapper
+unit-test classes using the existing fixtures. Codex added both alongside the
+other mapper tests, with CardFixture/PlayerFixture setup and GIVEN/WHEN/THEN
+blocks. Player mapping tests check IDs, game ownership, names, ordered/repeated
+cards, derived totals, and the empty-card case. Card mapping tests cover both
+directions independently, preserving suit/rank and the resulting face value.
+Tests require no Spring context or database. No production code, dependencies,
+or fixture behavior was changed.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed, also formatting existing developer edits in
+  GameEntityTest, EntityTestSupport, PlayerEntityTest, and GameEntityMapperTest.
+- `./mvnw validate` and `./mvnw verify` remain blocked by the existing
+  PlayerEntityTest wildcard import (AvoidStarImport); full verification did
+  not pass.
+- Separate focused compilation and execution with `./mvnw compiler:compile
+  compiler:testCompile dependency:properties surefire:test
+  '-Dtest=*EntityMapperTest'` passed all seven mapper cases, including all four
+  newly added cases, zero failures/errors/skips. This is focused verification.
+- New-test whitespace and `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 39 — Separate mapper directions and add entity fixtures
+
+### Goal, decisions, and AI contribution
+
+The developer requested dedicated toEntity and fromEntity tests for every mapper
+and fixtures for CardEntity, DeckEntity, GameEntity, and PlayerEntity. Codex added
+all four fluent fixtures and reviewed all four mapper test classes. Each test now
+exercises one direction only; input and expected objects are built independently
+with domain and entity fixtures, without using a mapper to generate expectations.
+Coverage includes ordered/repeated cards, identities, game ownership, derived
+player totals, empty collections, and unattached full decks. No production code
+was changed.
+
+### Actual verification
+
+- Selected Java `26.0.2-tem` with `sdk env`; Maven Wrapper used.
+- `./mvnw spotless:apply` passed and formatted the eight edited/added Java files.
+- `./mvnw validate` and `./mvnw verify` failed on the existing wildcard import in
+  PlayerEntityTest (AvoidStarImport); full verification did not pass.
+- Separate focused compilation and execution with `./mvnw compiler:compile
+  compiler:testCompile dependency:properties surefire:test
+  '-Dtest=*EntityMapperTest'` passed all 14 mapper tests, zero failures/errors/skips.
+- Reviewed all mapper tests: each invokes only toEntity or fromEntity, with no
+  whenMappingBothWays tests remaining. `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 40 — Make entity mappers injectable
+
+### Goal, decisions, and AI contribution
+
+The developer requested instance-based entity mappers for injection into future
+repositories and composition between mappers. Codex registered all four as Spring
+components and made toEntity/fromEntity instance methods. DeckEntityMapper and
+PlayerEntityMapper receive CardEntityMapper through constructors; GameEntityMapper
+receives DeckEntityMapper and PlayerEntityMapper. Updated all mapper and entity
+test call sites to construct these dependencies directly, preserving dedicated
+mapping-direction tests without adding a Spring test context. Updated the plan
+and its rehydration example. No repositories were introduced.
+
+The focused run exposed existing test issues: Deck mapper expectations used an
+independently randomized card, and Card fromEntity asserted the entity type.
+Corrected the fixture correspondence and domain-type assertion while preserving
+the surrounding test changes.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` via `sdk env` and Maven Wrapper.
+- `./mvnw spotless:apply` passed.
+- `./mvnw validate` and `./mvnw verify` remain blocked by the existing
+  PlayerEntityTest wildcard import (AvoidStarImport). Full verification did not
+  pass; entity database tests were not executed by these lifecycle commands.
+- Focused compilation and execution with `./mvnw compiler:compile
+  compiler:testCompile dependency:properties surefire:test
+  '-Dtest=*EntityMapperTest'` initially exposed three assertion failures; after
+  correcting the two test issues, all 14 mapper tests passed with no failures,
+  errors, or skips. All test sources compiled, including updated entity tests.
+- Reviewed mapper sources for remaining static methods/private constructors;
+  none remain. `git diff --check` passed.
+- No commit or push was performed.
+
+## Step 41 — Simplify Game and Player mapper tests
+
+### Goal, decisions, and AI contribution
+
+The developer requested that GameEntityMapperTest and PlayerEntityMapperTest
+follow the simplified Card/Deck mapper test structure. Codex replaced the larger
+fixture graphs and recursive comparisons with fixture constants, mocked child
+mappers, and direct assertions on mapped identities, names, and collections.
+Each class has one toEntity test and one fromEntity test; stubbing is specific
+to the direction under test. MockitoExtension initializes @Mock/@InjectMocks.
+Also added the missing Mockito initialization and reverse-direction stub to the
+existing simplified Deck test, retaining its two-test structure. Card tests were
+preserved. No mapping behavior was changed.
+
+### Actual verification
+
+- Used pinned Java `26.0.2-tem` via `sdk env` and Maven Wrapper.
+- `./mvnw spotless:apply` passed, formatting the three mapper test files and
+  the existing developer edit in GameEntityMapper.
+- `./mvnw validate` and `./mvnw verify` failed on the existing PlayerEntityTest
+  wildcard import (AvoidStarImport); full verification did not pass.
+- Focused compilation and execution with `./mvnw compiler:compile
+  compiler:testCompile dependency:properties surefire:test
+  '-Dtest=*EntityMapperTest'` passed all eight mapper tests, no failures/errors/skips.
+- `git diff --check` passed. No commit or push was performed.
+
+## Step 42 — Clean up entity test setup
+
+### Goal, decisions, and AI contribution
+
+The developer requested that GameEntityTest and PlayerEntityTest follow the
+cleaned-up DeckEntityTest setup. Codex replaced domain fixtures and mapper wiring
+with entity fixtures, keeping the existing persistence, merge, cascade deletion,
+orphan removal, ordering, and managed-card update checks. Added a simple Player
+persist/retrieve case using the shared helpers and a fresh fixture identity.
+Game graph assertions run while the entity manager is open to load associations.
+Removed the unused domain fixture graph and populatedGame helper from
+BaseEntityTest. Production mappings were preserved.
+
+### Actual verification
+
+- Used Java `26.0.2-tem` via `sdk env` and Maven Wrapper.
+- `./mvnw spotless:apply` passed, including formatting existing developer edits.
+- `./mvnw validate` and `./mvnw verify` failed on the existing wildcard import
+  `java.util.*` in domain Game; the former PlayerEntityTest wildcard import is
+  gone as part of its setup cleanup.
+- Focused compilation with `compiler:compile compiler:testCompile
+  dependency:properties surefire:test
+  '-Dtest=GameEntityTest,PlayerEntityTest,DeckEntityTest'` compiled successfully,
+  but all three classes failed during database initialization, before test bodies
+  ran. The existing GameEntity join table `decks` conflicts with the DeckEntity
+  table, producing a foreign-key/primary-key column count mismatch.
+- `git diff --check` passed. No commit or push was performed.
+
+## Step 43 — Keep only basic entity persistence tests
+
+### Goal, decisions, and AI contribution
+
+The developer clarified that GameEntityTest and PlayerEntityTest should contain
+only __whenPersistingAndRetrieving__ tests, matching DeckEntityTest. Codex removed
+the retained merge, cascade, orphan removal, ordering, and update tests and their
+setup. Each class now contains one entity fixture constant and one test using
+persistEntity/retrieveEntity with direct type and stored-field assertions.
+Game assertions cover ID/name; Player assertions cover ID/game ID/name/cards.
+
+### Actual verification
+
+- Used pinned Java via `sdk env` and Maven Wrapper; spotless:apply passed.
+- validate and verify remain blocked by the existing java.util wildcard import
+  in domain Game (AvoidStarImport).
+- Focused entity test compilation passed, but all three entity test classes
+  failed during database setup on the existing decks join-table/entity-table
+  collision, before their test methods ran. No passing test execution claimed.
+- Confirmed GameEntityTest and PlayerEntityTest each contain only the requested
+  __whenPersistingAndRetrieving__ method. git diff --check passed.
+- No commit or push was performed.
+
+## Step 44 — Verify and prepare the entity/model changes for review
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer reported passing tests and requested a commit, push, and pull
+request. Codex reviewed the pending changes and contribution workflow, preserved
+the developer's changes, and prepared the complete entity/model work on the
+existing feat/entities-models branch for a signed commit and PR to main.
+The PR describes the persistence entities, injectable mappers, card conversion,
+domain model simplifications, fixtures, tests, and accompanying documentation.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and ran Maven Wrapper verify.
+- The full build passed: Spotless, Checkstyle, and all 28 tests passed, with
+  zero failures, errors, or skipped tests. The executable JAR was built.
+- Earlier blocked verification entries describe their historical state; the
+  current full build succeeds, including all three entity persistence tests.

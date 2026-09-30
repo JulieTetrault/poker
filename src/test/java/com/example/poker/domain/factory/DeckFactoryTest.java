@@ -39,14 +39,9 @@ class DeckFactoryTest {
             Deck deck = deckFactory.create();
 
             assertThat(deck.getId()).isEqualTo(SOME_DECK_ID);
-            assertThat(deck.getShoeId()).isNull();
+            assertThat(deck.getGameId()).isNull();
             assertThat(deck.getCards()).hasSize(52);
-            assertThat(deck.getCards())
-                    .extracting(Card::id)
-                    .doesNotContainNull()
-                    .doesNotHaveDuplicates();
-            assertThat(deck.getCards()).extracting(Card::deckId).containsOnly(SOME_DECK_ID);
-
+            assertThat(deck.getCards()).doesNotContainNull().doesNotHaveDuplicates();
             for (Suit suit : Suit.values()) {
                 assertThat(
                                 deck.getCards().stream()

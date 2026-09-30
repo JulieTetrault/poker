@@ -5,11 +5,16 @@ import java.util.UUID;
 
 public final class Deck {
     private final UUID id;
-    private UUID shoeId;
+    private UUID gameId;
     private final List<Card> cards;
 
     public Deck(UUID id, List<Card> cards) {
+        this(id, null, cards);
+    }
+
+    public Deck(UUID id, UUID gameId, List<Card> cards) {
         this.id = id;
+        this.gameId = gameId;
         this.cards = cards;
     }
 
@@ -17,15 +22,15 @@ public final class Deck {
         return id;
     }
 
-    public UUID getShoeId() {
-        return shoeId;
+    public UUID getGameId() {
+        return gameId;
     }
 
     public List<Card> getCards() {
         return cards;
     }
 
-    public void setShoeId(UUID shoeId) {
-        this.shoeId = shoeId;
+    public void setGameId(UUID gameId) {
+        this.gameId = gameId;
     }
 }

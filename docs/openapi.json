@@ -1661,7 +1661,6 @@
                   "success": {
                     "value": [
                       {
-                        "deckId": "22222222-2222-4222-8222-222222222222",
                         "suit": "hearts",
                         "rank": "Ace"
                       }
@@ -2046,20 +2045,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "id",
-          "deckId",
           "suit",
           "rank"
         ],
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "deckId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "suit": {
             "type": "string",
             "$ref": "#/components/schemas/Suit"
@@ -2075,7 +2064,7 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "shoeId",
+          "gameId",
           "cards"
         ],
         "properties": {
@@ -2083,7 +2072,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "shoeId": {
+          "gameId": {
             "type": [
               "string",
               "null"
@@ -2133,22 +2122,6 @@
         }
       },
 
-      "Hand": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "cards"
-        ],
-        "properties": {
-          "cards": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Card"
-            }
-          }
-        }
-      },
-
       "Player": {
         "type": "object",
         "additionalProperties": false,
@@ -2156,7 +2129,7 @@
           "id",
           "gameId",
           "name",
-          "hand"
+          "cards"
         ],
         "properties": {
           "id": {
@@ -2172,8 +2145,11 @@
             "minLength": 1,
             "maxLength": 100
           },
-          "hand": {
-            "$ref": "#/components/schemas/Hand"
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            }
           }
         }
       },
@@ -2201,19 +2177,9 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "id",
-          "gameId",
           "decks"
         ],
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "gameId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "decks": {
             "type": "array",
             "items": {
@@ -2394,14 +2360,10 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-            "deckId",
             "suit",
             "rank"
         ],
         "properties": {
-          "deckId": {
-            "type": "string"
-          },
           "suit": {
             "type": "string"
           },

@@ -1,5 +1,6 @@
 package com.example.poker.domain.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -7,13 +8,17 @@ public final class Player {
     private final UUID id;
     private final UUID gameId;
     private final String name;
-    private final Hand hand;
+    private final List<Card> cards;
 
     public Player(UUID id, UUID gameId, String name) {
+        this(id, gameId, name, new ArrayList<>());
+    }
+
+    public Player(UUID id, UUID gameId, String name, List<Card> cards) {
         this.id = id;
         this.gameId = gameId;
         this.name = name;
-        this.hand = new Hand();
+        this.cards = cards;
     }
 
     public UUID getId() {
@@ -28,15 +33,15 @@ public final class Player {
         return name;
     }
 
-    public Hand getHand() {
-        return hand;
+    public List<Card> getCards() {
+        return cards;
     }
 
     public void receiveCards(List<Card> cards) {
-        hand.addCards(cards);
+        this.cards.addAll(cards);
     }
 
     public int getHandValue() {
-        return hand.getValue();
+        return cards.stream().mapToInt(card -> card.rank().getValue()).sum();
     }
 }

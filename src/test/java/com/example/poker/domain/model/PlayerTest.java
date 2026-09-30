@@ -24,8 +24,15 @@ class PlayerTest {
 
         player.receiveCards(List.of(THIRD_CARD));
 
-        assertThat(player.getHand().getCards())
-                .containsExactly(FIRST_CARD, SECOND_CARD, THIRD_CARD);
+        assertThat(player.getCards()).containsExactly(FIRST_CARD, SECOND_CARD, THIRD_CARD);
         assertThat(player.getHandValue()).isEqualTo(9);
+    }
+
+    @Test
+    void givenPlayerWithoutCards__whenGettingHandValue__thenValueIsZero() {
+        Player player = new Player(SOME_PLAYER_ID, SOME_GAME_ID, SOME_PLAYER_NAME);
+
+        assertThat(player.getCards()).isEmpty();
+        assertThat(player.getHandValue()).isZero();
     }
 }

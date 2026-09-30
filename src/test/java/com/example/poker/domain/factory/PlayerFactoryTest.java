@@ -41,7 +41,7 @@ class PlayerFactoryTest {
             assertThat(player.getId()).isEqualTo(SOME_PLAYER_ID);
             assertThat(player.getGameId()).isEqualTo(SOME_GAME_ID);
             assertThat(player.getName()).isEqualTo(SOME_PLAYER_NAME);
-            assertThat(player.getHand().getCards()).isEmpty();
+            assertThat(player.getCards()).isEmpty();
             assertThat(player.getHandValue()).isZero();
         }
     }
