@@ -1,21 +1,20 @@
 package com.example.poker.domain.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public final class Deck {
     private final UUID id;
     private UUID gameId;
-    private final List<Card> cards;
 
-    public Deck(UUID id, List<Card> cards) {
-        this(id, null, cards);
+    public Deck(UUID id) {
+        this(id, null);
     }
 
-    public Deck(UUID id, UUID gameId, List<Card> cards) {
+    public Deck(UUID id, UUID gameId) {
         this.id = id;
         this.gameId = gameId;
-        this.cards = cards;
     }
 
     public UUID getId() {
@@ -26,11 +25,20 @@ public final class Deck {
         return gameId;
     }
 
-    public List<Card> getCards() {
+    public List<Card> generateCards() {
+        List<Card> cards = new ArrayList<>();
+        for (Suit suit : Suit.values()) {
+            for (Rank rank : Rank.values()) {
+                cards.add(new Card(suit, rank));
+            }
+        }
         return cards;
     }
 
     public void setGameId(UUID gameId) {
+        if (this.gameId != null) {
+            throw new IllegalStateException("Deck already attached: " + id);
+        }
         this.gameId = gameId;
     }
 }

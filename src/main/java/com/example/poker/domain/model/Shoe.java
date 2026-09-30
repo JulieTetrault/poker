@@ -1,20 +1,63 @@
 package com.example.poker.domain.model;
 
+import com.example.poker.domain.service.CardCounter;
+import com.example.poker.domain.service.CardDealer;
+import com.example.poker.domain.service.CardShuffler;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public final class Shoe {
-    private final List<Deck> decks;
+    private final List<Card> cards;
+    private final CardShuffler cardShuffler;
+    private final CardCounter cardCounter;
+    private final CardDealer cardDealer;
 
     public Shoe() {
-        this(new ArrayList<>());
+        this(List.of());
     }
 
-    public Shoe(List<Deck> decks) {
-        this.decks = decks;
+    public Shoe(List<Card> cards) {
+        this(cards, new CardShuffler(), new CardCounter(), new CardDealer());
     }
 
-    public List<Deck> getDecks() {
-        return decks;
+    public Shoe(
+            List<Card> cards,
+            CardShuffler cardShuffler,
+            CardCounter cardCounter,
+            CardDealer cardDealer) {
+        this.cards = new ArrayList<>(cards);
+        this.cardShuffler = cardShuffler;
+        this.cardCounter = cardCounter;
+        this.cardDealer = cardDealer;
+        cardCounter.addCards(this.cards);
+    }
+
+    public List<Card> getCards() {
+        return List.copyOf(cards);
+    }
+
+    public void addDeck(Deck deck) {
+        List<Card> deckCards = deck.generateCards();
+        cards.addAll(deckCards);
+        cardCounter.addCards(deckCards);
+    }
+
+    public List<Card> dealCards(int cardCount) {
+        List<Card> dealt = cardDealer.dealCards(cards, cardCount);
+        cardCounter.removeCards(dealt);
+        return dealt;
+    }
+
+    public Map<Suit, Map<Rank, Integer>> getUndealtCardCounts() {
+        return cardCounter.getCardsCount();
+    }
+
+    public Map<Suit, Integer> getUndealtSuitCardsCount() {
+        return cardCounter.getSuitCardsCount();
+    }
+
+    public void shuffle() {
+        cardShuffler.shuffle(cards);
     }
 }

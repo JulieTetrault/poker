@@ -14,11 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class InMemoryGameRepository implements GameRepository {
     private final JPAGameRepository gameRepository;
+    private final JPADeckRepository deckRepository;
     private final GameEntityMapper gameEntityMapper;
 
     public InMemoryGameRepository(
-            JPAGameRepository gameRepository, GameEntityMapper gameEntityMapper) {
+            JPAGameRepository gameRepository,
+            GameEntityMapper gameEntityMapper,
+            JPADeckRepository deckRepository) {
         this.gameRepository = gameRepository;
+        this.deckRepository = deckRepository;
         this.gameEntityMapper = gameEntityMapper;
     }
 
@@ -35,9 +39,12 @@ public class InMemoryGameRepository implements GameRepository {
 
     @Override
     public void deleteById(@NonNull UUID id) {
-        gameRepository.delete(this.getEntityById(id));
+        GameEntity game = this.getEntityById(id);
+        deckRepository.deleteByGameId(id);
+        gameRepository.delete(game);
     }
 
+    @Override
     public Game getById(UUID id) {
         return gameEntityMapper.fromEntity(this.getEntityById(id));
     }

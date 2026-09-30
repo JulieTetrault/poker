@@ -7,27 +7,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 public final class DeckEntityMapper {
-    private final CardEntityMapper cardEntityMapper;
-
-    public DeckEntityMapper(CardEntityMapper cardEntityMapper) {
-        this.cardEntityMapper = cardEntityMapper;
-    }
-
     public DeckEntity toEntity(Deck deck) {
         return toEntity(deck, null);
     }
 
-    public DeckEntity toEntity(Deck deck, GameEntity gameEntity) {
-        return new DeckEntity(
-                deck.getId(),
-                gameEntity,
-                deck.getCards().stream().map(cardEntityMapper::toEntity).toList());
+    public DeckEntity toEntity(Deck deck, GameEntity game) {
+        return new DeckEntity(deck.getId(), game);
     }
 
     public Deck fromEntity(DeckEntity entity) {
-        return new Deck(
-                entity.getId(),
-                entity.getGame() == null ? null : entity.getGame().getId(),
-                entity.getCards().stream().map(cardEntityMapper::fromEntity).toList());
+        return new Deck(entity.getId(), entity.getGame() == null ? null : entity.getGame().getId());
     }
 }

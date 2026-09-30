@@ -24,7 +24,6 @@ class DeckEntityTest extends BaseEntityTest {
                     assertThat(deckEntity).isInstanceOf(DeckEntity.class);
                     assertThat(deckEntity.getId()).isEqualTo(SOME_DECK_ENTITY.getId());
                     assertThat(deckEntity.getGame().getId()).isEqualTo(SOME_GAME_ENTITY.getId());
-                    assertThat(deckEntity.getCards()).isEqualTo(SOME_DECK_ENTITY.getCards());
                 });
     }
 }

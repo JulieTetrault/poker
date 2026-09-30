@@ -1,6 +1,6 @@
 # API implementation plan
 
-Status: implementation steps with confirmed API decisions, September 29, 2026.
+Status: implementation steps with confirmed API decisions, September 30, 2026.
 
 Game endpoints are not yet implemented. Follow the [requirements](requirements.md),
 [domain model](domain.md), and [OpenAPI contract](openapi.json). Use the
@@ -55,8 +55,7 @@ com.example.poker
 │   ├── request
 │   ├── response
 │   └── mapper
-├── application
-│   └── service
+├── service
 ├── domain
 │   ├── factory
 │   ├── model
@@ -80,8 +79,9 @@ Create `Game`, `Shoe`, `Deck`, `Card`, and `Player`, plus `Suit` and
 
 Domain classes contain business state and behavior only.
 
-`Game`, `Player`, and `Deck` are aggregate roots. `Shoe` remains a domain
-model inside Game so it can own shoe-specific behavior; it is not a root.
+`Game`, `Player`, and `Deck` are aggregate roots. Game owns one Shoe, which keeps
+undealt cards and delegates to CardDealer, CardCounter, and
+CardShuffler. Shoe is a domain model without an independent identity.
 
 Do not add:
 
@@ -95,23 +95,23 @@ to domain models.
 
 Core relationships:
 
-- A `Game` owns one `Shoe` and its players.
+- A `Game` owns its shoe and players; Shoe owns undealt cards.
 - Each `Player` belongs to one game and owns an ordered `List<Card> cards`.
-- Each `Shoe` belongs to one game and has no identifiers of its own.
-- A `Shoe` contains zero or more attached decks.
-- A new `Deck` contains 52 cards and has a null `gameId` until attached.
-- Once attached, a deck cannot be removed from its shoe.
+- A new `Deck` holds only identity and a null `gameId` until attached.
+  `Deck.generateCards()` creates the standard 52 cards when Shoe adds it.
+- Once attached, a deck cannot be removed from its game.
 - A `Card` is an immutable value object containing only suit and rank.
   It has no UUID or deck reference; lists preserve duplicate occurrences.
 - A card's numeric value is derived from `Rank.getValue()`.
 - A player's hand value is derived from `Player.cards`.
-- Keep dealing, remaining-card counts, and shuffling in `Shoe`.
+- Keep dealing, remaining-card counts, and shuffling in `Shoe`, delegating to
+  CardDealer, CardCounter, and CardShuffler.
 - Keep card receipt and hand-total calculations in `Player`.
-- Keep player ordering behavior associated with `Game`.
+- Keep player listing order in `GameService.getPlayers`.
 - Track undealt cards independently from each deck's original 52-card
   collection.
 - Removing a player discards that player's cards. They remain dealt and are
-  never returned to the shoe.
+  never returned to the undealt list.
 
 Constructors must receive already-created identifiers rather than generate
 identifiers internally.
@@ -119,7 +119,7 @@ identifiers internally.
 For example:
 
 ```java
-public Deck(UUID id, List<Card> cards) {
+public Deck(UUID id) {
     this.id = Objects.requireNonNull(id, "id");
     this.cards = List.copyOf(cards);
 }
@@ -148,8 +148,9 @@ DeckFactory
 ```
 
 The aggregate roots are `Game`, `Player`, and `Deck`; use a creation factory
-for each. `Shoe` is an internal domain model owned by Game. It has no
-ShoeFactory, persistence entity, or repository. The Game constructor initializes it.
+for each. Game initializes its Shoe; Shoe has no separate factory, entity, or
+repository. Shoe provides default card collaborators and supports full injection
+for tests; counters are owned by individual shoes.
 
 Factories are responsible for:
 
@@ -172,9 +173,8 @@ public final class DeckFactory {
     public Deck create() {
         UUID deckId = idGenerator.nextId();
 
-        List<Card> cards = generateCards();
 
-        return new Deck(deckId, cards);
+        return new Deck(deckId);
     }
 }
 ```
@@ -184,7 +184,7 @@ The factory creates the deck ID and all 52 suit/rank card values.
 A `GameFactory` should create:
 
 - the game ID
-- the initial empty shoe
+- the initial empty deck and undealt-card lists
 - the initial empty player collection
 
 For example:
@@ -232,34 +232,9 @@ mapping. Keep aggregate creation separate from restoration.
 Loading an existing aggregate from persistence must not generate new IDs or
 apply "new object" initialization rules.
 
-Domain factories are responsible only for creating new aggregates. Do not add
-`rehydrate` or `restore` methods to factories.
-
-Persistence mappers own rehydration through `fromEntity`. They instantiate
-domain models using persisted identifiers and restore child collections and
-relationships directly, without invoking factories or identity generators.
-
-For example, in `DeckEntityMapper`:
-
-```java
-public Deck fromEntity(DeckEntity entity) {
-    Deck deck = new Deck(
-        entity.getId(),
-        entity.getCards().stream().map(cardEntityMapper::fromEntity).toList()
-    );
-    deck.setGameId(entity.getGameId());
-    return deck;
-}
-```
-
-Rehydration:
-
-- preserves persisted IDs
-- preserves persisted card state
-- does not generate cards
-- does not generate UUIDs
-- does not reset the shoe relationship
-- does not perform creation-only behavior
+Persistence mappers restore domain state using persisted identifiers and ordered
+card lists. DeckEntityMapper restores only deck identity and ownership;
+no mapper depends on a factory or generates identities.
 
 Persistence mappers implement this rehydration path in `fromEntity`.
 
@@ -319,11 +294,12 @@ exactly as long as persistence mapping preserves domain invariants.
 
 Create explicit mappers between domain models and persistence entities.
 Register entity mappers as Spring components with instance `toEntity` and
-`fromEntity` methods. Use constructor injection: DeckEntityMapper and
-PlayerEntityMapper depend on CardEntityMapper; GameEntityMapper depends on
-DeckEntityMapper and PlayerEntityMapper. Future repositories inject these mappers.
+`fromEntity` methods. DeckEntityMapper has no collaborators.
+PlayerEntityMapper depends on CardEntityMapper;
+GameEntityMapper depends on CardEntityMapper and PlayerEntityMapper.
+Repositories inject these mappers.
 
-Persistence mappers must not invoke aggregate creation logic.
+Persistence mappers must not generate new identities or invoke factories.
 
 When reading from the database, `fromEntity` constructs domain models directly
 and restores persisted state. Factories are not involved.
@@ -386,10 +362,10 @@ Avoid sharing persistence entities outside the persistence package.
 #### Current implementation scope
 
 Entities and mappers preserve the state currently exposed by the domain models:
-identifiers, names, deck attachment, original deck cards, player order, and hands.
+identifiers, names, deck attachment, undealt card order, and hands.
 Player owns its cards directly; there is no Hand class or Hand entity/table.
-DeckEntity and PlayerEntity each store ordered
-card arrays in a `cards` column. `CardEntity` contains only suit and rank with no identity or deck reference. `CardListConverter` uses JPA `AttributeConverter`
+DeckEntity stores only ID and game attachment. PlayerEntity stores ordered
+card arrays in a `cards` column; GameEntity stores ordered `undealt_cards`. `CardEntity` contains only suit and rank with no identity or deck reference. `CardListConverter` uses JPA `AttributeConverter`
 to encode the list as JSON text in that row; there is no Card entity/table or
 card join table. Array order and repeated values are preserved. Enums are
 encoded as names and derived numeric values are not stored. JPA does not define
@@ -399,19 +375,15 @@ keeps the array in the owning row without database-specific array types.
 Mapper `fromEntity` methods restore supplied state without generating IDs.
 CardValueMapper maps immutable values with `toValue` and `fromValue`.
 The mappings use scalar ownership IDs and unidirectional JPA associations to
-avoid recursive mapping. GameEntity stores ordered `decks` directly, not a
-ShoeEntity association. Shoe has no identifiers. GameEntityMapper restores it
-from the game entity's deck collection, and Deck.gameId records the owning game.
-Ordered entity collections use join tables, including `game_decks`.
-Standalone decks retain a nullable game ID. Removing a player deletes only its
-stored card array; the deck's original values remain unchanged.
+avoid recursive mapping. GameEntityMapper restores Shoe from the ordered
+undealt-card list, then passes it and restored players into Game. Deck.gameId
+records ownership through decks.game_id; there is no game_decks join table.
+Standalone decks retain a nullable game ID. Removing a player discards their
+stored cards without changing the game's undealt list.
 
-The current Shoe model does not expose undealt order or discarded state. Add
-that state and extend the persistence mappings alongside the domain-behavior
-step; it cannot yet be restored by these mappers. JPA API is a production
-dependency, with Hibernate and H2 used only in tests at this step. Runtime
-persistence configuration remains a later step. Map loaded collections while
-the persistence context is open; collection associations are lazy by default.
+GameEntity persists undealt_cards as JSON using CardListConverter. Restoration
+preserves exact remaining order and exhaustion without rebuilding from decks.
+Map loaded collections while the persistence context is open.
 
 ### 3. Create aggregate repositories
 
@@ -432,7 +404,7 @@ operation transactional, and preserve existing aggregate identities.
 Use fixture-based Mockito unit tests for successful writes and missing aggregate
 failures, including confirmation that rejected operations perform no writes.
 Add the JPA runtime and embedded H2 dependencies required to wire the repositories;
-explicit database configuration remains in step 5.
+explicit database configuration remains in step 6.
 
 ### 4. Create API DTOs and API mappers
 
@@ -496,25 +468,7 @@ positive deal counts.
 
 Reject unknown fields and incorrect JSON types rather than coercing them.
 
-### 5. Configure H2 in-memory persistence
-
-Use H2 as the local in-memory database with Hibernate/JPA.
-
-The database may be recreated on application restart. Persistence across
-application restarts is not required by the assignment.
-
-Use Spring Boot JPA configuration so schema creation is automatic during local
-development and tests.
-
-Keep the selected database behind repository abstractions so replacing H2 with
-PostgreSQL or another database would not require changes to the domain model.
-
-Database configuration belongs in infrastructure/application configuration,
-not in domain classes.
-
-Do not write domain behavior into repository classes.
-
-### 6. Create application services
+### 5. Create application services
 
 Application services orchestrate:
 
@@ -536,8 +490,8 @@ Controller
 For example:
 
 ```java
-public Game createGame(CreateGameRequest request) {
-    Game game = gameFactory.create(request.name());
+public Game createGame(String name) {
+    Game game = gameFactory.create(name);
     return gameRepository.create(game);
 }
 ```
@@ -558,6 +512,57 @@ Services resolve resources, enforce ownership constraints, invoke domain
 behavior, and persist modified aggregates.
 
 Use transactions for operations involving multiple persistent changes.
+
+#### Current service scope (implemented)
+
+- GameService: createGame(String name), deleteGame(UUID gameId),
+  addDeck(UUID gameId, UUID deckId), addPlayer(UUID gameId, String playerName),
+  removePlayer(UUID gameId, UUID playerId), getPlayerCards(UUID gameId, UUID playerId),
+  getPlayers(UUID gameId), shuffleCards(UUID gameId), getGame(UUID gameId),
+  dealCards(int cardCount, UUID gameId, UUID playerId),
+  returning the cards actually dealt.
+- DeckService: createDeck(), attachDeckToGame(UUID gameId, UUID deckId).
+- PlayerService: createPlayer(UUID gameId, String name),
+  getPlayer(UUID gameId, UUID playerId).
+
+Services use constructor injection and transactions. Creation uses domain
+factories. Game membership writes go through GameRepository.update; the mapper
+sets child game relationships and cascade mappings persist the changes.
+Player creation prepares domain objects; deck attachment persists ownership.
+Player lookups require a matching game ID. An attached deck cannot be attached
+again. Player removal uses orphan removal; game deletion explicitly deletes
+attached decks and cascades to players.
+
+GameService resolves the game first, checks player ownership, and delegates to
+Game.dealCards(int cardCount, Player player). Game coordinates removing
+min(cardCount, remaining cards) from its undealt list and appending them to the
+supplied player's hand. GameService persists the updated aggregate once through
+GameRepository.update. The intended transaction saves both changes without changing membership or a
+separate player write. Current persistence tests expose missing saved hands when
+the supplied player is a separate instance from the game membership map; that
+existing issue remains unresolved.
+Positive-count validation belongs to the API request layer. Empty undealt lists return
+an empty list. Undealt order must survive reloading; player hands must also be saved, and discarded cards never become available again.
+Further service methods, HTTP error mapping, and concurrent mutation handling
+remain future work.
+
+### 6. Configure H2 in-memory persistence
+
+Use H2 as the local in-memory database with Hibernate/JPA.
+
+The database may be recreated on application restart. Persistence across
+application restarts is not required by the assignment.
+
+Use Spring Boot JPA configuration so schema creation is automatic during local
+development and tests.
+
+Keep the selected database behind repository abstractions so replacing H2 with
+PostgreSQL or another database would not require changes to the domain model.
+
+Database configuration belongs in infrastructure/application configuration,
+not in domain classes.
+
+Do not write domain behavior into repository classes.
 
 ### 7. Create controllers
 
@@ -621,7 +626,7 @@ Return players ordered by:
 
 Delete everything owned by a deleted game, including:
 
-- its shoe
+- its undealt card list
 - attached decks
 - cards
 - players
@@ -633,11 +638,10 @@ When removing a player:
 
 - remove the player from active game membership
 - discard all cards in their hand
-- do not return those cards to the shoe
+- do not return those cards to the undealt list
 - discarded cards cannot be dealt again
 
-A deck belongs to at most one shoe at a time. A shoe belongs to exactly one
-game.
+A deck belongs to at most one game at a time.
 
 Deal:
 
@@ -673,9 +677,35 @@ Within each suit:
 6. 2
 7. Ace
 
-Implement Fisher–Yates directly using a random number generator.
+Use the approved [shoe storage and shuffle design](domain.md#shoe-storage-counting-and-shuffling):
+an ArrayList containing only undealt cards, with its last entry next to deal, and a nested
+EnumMap<Suit, EnumMap<Rank, Integer>> for remaining-face counts.
+Shoe delegates end-removal to CardDealer in O(cards dealt), then updates its
+CardCounter. It delegates the count index to its own CardCounter,
+and delegates domain shuffle to CardShuffler. CardCounter owns the nested EnumMap
+and exposes card additions/removals and face/suit queries; each shoe receives a
+fresh counter, rebuilt from the undealt list on restoration. The shuffler implements Fisher–Yates and uses a default RNG; its
+RandomGenerator overload allows deterministic tests. Shoe provides default collaborators and a full injection constructor for mocks.
+GameFactory and GameEntityMapper need no domain-service wiring; the mapper
+constructs Shoe from persistent state. GameTest mocks Shoe, and ShoeTest mocks
+its card collaborators.
+GameService.shuffleCards loads the game, shuffles its shoe, and saves the game.
+GameService.getGame returns the domain game; response mappers obtain counts from
+its shoe; no separate service methods for those counts are needed. HTTP endpoints and
+response mappers remain future work.
 
-Do not call a library-provided shuffle implementation.
+Implement in-place Fisher–Yates directly using a library random-number generator.
+For each index i from the end of the undealt list backward while i > 0, select j uniformly
+from 0 through i (inclusive), then swap those entries.
+This produces a uniform random permutation with uniform bounded choices, runs in
+O(n) time, and uses O(1) auxiliary space. It avoids random-priority sorting and
+collision handling. Do not call a library-provided shuffle operation.
+Shuffle returns void and leaves the count map unchanged.
+
+Persist the complete undealt list in order and rebuild
+the count map from that list on restoration. Keep original deck contents unchanged.
+See the [NIST algorithm reference](https://xlinux.nist.gov/dads/HTML/fisherYatesShuffle.html)
+for Fisher–Yates.
 
 Shuffle only undealt cards and preserve:
 
@@ -735,8 +765,8 @@ Verify:
 
 - aggregate roots receive generated IDs
 - IDs are generated by `IdGenerator`, not the aggregate
-- `GameFactory` creates a game and shoe with the correct relationship
-- `DeckFactory` creates exactly 52 cards
+- `GameFactory` creates a game with empty deck, undealt-card, and player collections
+- `DeckFactory` supplies identity only; `Deck.generateCards()` creates exactly 52 cards on attachment
 - all 52 card faces are distinct within a deck
 - cards contain suit/rank values without identifiers
 - a newly created deck has a null `gameId`
@@ -751,8 +781,8 @@ Verify:
 
 - persisted aggregate IDs are preserved
 - rehydration does not generate new IDs
-- rehydration does not regenerate cards
-- rehydration preserves shoe attachment
+- rehydration preserves stored game/player cards and deck identity/ownership
+- rehydration preserves deck attachment
 - rehydration preserves dealt/discarded state
 
 #### Domain tests
@@ -765,10 +795,10 @@ Verify:
 - player ordering
 - deck attachment invariants
 - Fisher–Yates preserves every card
-- dealing removes cards only from the undealt shoe
+- dealing removes cards only from the game's undealt list
 - dealing preserves card values and their occurrence counts
 - removing a player discards their hand
-- discarded cards never return to the shoe
+- discarded cards never return to the undealt list
 
 #### Persistence tests
 
@@ -784,7 +814,7 @@ Using H2, verify:
 - relationships are persisted correctly
 - unassigned decks retain a null `gameId`
 - attaching a deck persists ownership
-- a deck cannot be attached to multiple shoes
+- a deck cannot be attached to multiple games
 - deleting a game cascades only to resources owned by that game
 
 ### 11. Build and verification workflow
@@ -829,9 +859,8 @@ aligned with implemented behavior.
 - Card value is derived from `Rank`; it is not stored on `Card`.
 - Hand value is derived from `Player.cards`; it is not persisted.
 - Cards contain suit/rank only; ordered collections preserve duplicate faces.
-- Removing a player discards their cards without returning them to the shoe.
-- A deck belongs to only one shoe at a time.
-- A shoe belongs to exactly one game.
+- Removing a player discards their cards without returning them to the undealt list.
+- A deck belongs to only one game at a time.
 - Attached decks cannot be removed.
 - Adding a deck returns `204 No Content`.
 - `ErrorResponse` contains `detail`, `status`, and `code`.
@@ -846,3 +875,10 @@ The API error media type still needs one final decision:
 - use `application/json`
 
 This is an API-contract decision and does not add a business requirement.
+
+### Deck persistence simplification (implemented)
+
+GameEntity and Shoe no longer retain deck collections. DeckEntity stores only ID and its game association. DeckService persists attachment separately in the same
+transaction as the game's undealt-card update. Deleting a game explicitly deletes
+attached deck records before deleting the game and its players. Unattached decks
+remain available. Only game undealt cards and player hands store card JSON.

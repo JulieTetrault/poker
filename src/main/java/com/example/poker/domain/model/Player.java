@@ -18,7 +18,7 @@ public final class Player {
         this.id = id;
         this.gameId = gameId;
         this.name = name;
-        this.cards = cards;
+        this.cards = new ArrayList<>(cards);
     }
 
     public UUID getId() {
@@ -37,7 +37,7 @@ public final class Player {
         return cards;
     }
 
-    public void receiveCards(List<Card> cards) {
+    public void addCards(List<Card> cards) {
         this.cards.addAll(cards);
     }
 

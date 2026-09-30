@@ -41,7 +41,7 @@ public final class PlayerFixture {
 
     public Player build() {
         Player player = new Player(id, gameId, name);
-        player.receiveCards(cards);
+        player.addCards(cards);
         return player;
     }
 }

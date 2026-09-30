@@ -3,10 +3,7 @@ package com.example.poker.domain.factory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.example.poker.domain.model.Card;
 import com.example.poker.domain.model.Deck;
-import com.example.poker.domain.model.Rank;
-import com.example.poker.domain.model.Suit;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,16 +37,6 @@ class DeckFactoryTest {
 
             assertThat(deck.getId()).isEqualTo(SOME_DECK_ID);
             assertThat(deck.getGameId()).isNull();
-            assertThat(deck.getCards()).hasSize(52);
-            assertThat(deck.getCards()).doesNotContainNull().doesNotHaveDuplicates();
-            for (Suit suit : Suit.values()) {
-                assertThat(
-                                deck.getCards().stream()
-                                        .filter(card -> card.suit() == suit)
-                                        .map(Card::rank)
-                                        .toList())
-                        .containsExactlyInAnyOrder(Rank.values());
-            }
         }
     }
 }

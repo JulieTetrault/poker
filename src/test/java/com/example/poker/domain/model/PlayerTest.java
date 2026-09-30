@@ -20,9 +20,9 @@ class PlayerTest {
     @Test
     void givenPlayerWithCards__whenReceivingMoreCards__thenHandAndValueAreUpdated() {
         Player player = new Player(SOME_PLAYER_ID, SOME_GAME_ID, SOME_PLAYER_NAME);
-        player.receiveCards(List.of(FIRST_CARD, SECOND_CARD));
+        player.addCards(List.of(FIRST_CARD, SECOND_CARD));
 
-        player.receiveCards(List.of(THIRD_CARD));
+        player.addCards(List.of(THIRD_CARD));
 
         assertThat(player.getCards()).containsExactly(FIRST_CARD, SECOND_CARD, THIRD_CARD);
         assertThat(player.getHandValue()).isEqualTo(9);
@@ -34,5 +34,16 @@ class PlayerTest {
 
         assertThat(player.getCards()).isEmpty();
         assertThat(player.getHandValue()).isZero();
+    }
+
+    @Test
+    void givenRestoredPlayer__whenReceivingCards__thenAppendToExistingHand() {
+        // GIVEN
+        Player player =
+                new Player(SOME_PLAYER_ID, SOME_GAME_ID, SOME_PLAYER_NAME, List.of(FIRST_CARD));
+        // WHEN
+        player.addCards(List.of(SECOND_CARD));
+        // THEN
+        assertThat(player.getCards()).containsExactly(FIRST_CARD, SECOND_CARD);
     }
 }

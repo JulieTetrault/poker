@@ -494,6 +494,19 @@ suit counts, controlled Fisher–Yates behavior, and complete one/two-deck deals
   the developer's revised implementation plan.
 - No commit or push was performed.
 
+## Publication verification — Services PR
+
+Date: September 30, 2026
+
+The developer requested committing, pushing, and opening a PR for the current
+changes on feat/services. Codex reviewed the diff and prepared the commit and PR
+description, preserving the current implementation and prior development history.
+
+Actual verification for this checkout: selected Java 26.0.2-tem with sdk env;
+Maven Wrapper spotless:apply, validate, and verify passed. All 73 current tests
+passed with no failures, errors, or skips. git diff --check passed. These results
+describe the current checkout rather than the historical test runs below.
+
 ## Step 48 — Prepare the repositories commit and pull request
 
 Date: September 30, 2026
@@ -1602,3 +1615,927 @@ the mismatch. Spotless applied Java formatting.
   and verify passed: all 44 tests passed with no failures, errors, or skips.
 - git diff --check passed.
 - No commit or push was performed.
+
+## Step 48 — Create initial application services (implementation step 5)
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested GameService createGame, deleteGame, addDeck, addPlayer,
+and removePlayer; DeckService createDeck; and PlayerService createPlayer and
+deletePlayer. Codex implemented transactional application services with constructor
+injection, existing factories, and domain repository interfaces. GameService
+depends on all three repositories. Creation returns persisted aggregates.
+addPlayer takes game/player IDs; createPlayer takes a game ID and name.
+Membership operations verify player ownership and deck attachment rejects
+previously attached decks. Added repository getById contracts and adapters using
+the existing NotFoundException. Registered DeckFactory and PlayerFactory using
+the existing GameFactory component convention.
+
+Moved application services to implementation step 5 and H2 configuration to
+step 6; documented the initial method signatures and deferred service work.
+Added Mockito unit tests and Spring/H2 persistence tests for reloading membership,
+player removal, game deletion cascades, and retaining unattached decks.
+The persistence test exposed player resurrection when deleting directly while
+the parent collection was loaded. removePlayer now persists the changed game,
+using its existing orphan-removal mapping to delete the player and hand.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- Initial unit-test build passed all 56 tests. The first persistence-test run
+  exposed the removal issue above; after fixing it, verify passed all 58 tests
+  with no failures, errors, or skipped tests.
+- Checked local documentation links and git diff --check.
+- No commit, push, or merge was performed.
+
+## Step 49 — Move the deck attachment guard into the domain
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving the already-attached deck check from GameService
+into Deck. Codex moved it into Deck.setGameId and removed the service check.
+The exception type and message remain the same. Reassigning an attached deck,
+including to the same game, is rejected before changing ownership.
+Added domain tests for rejected reassignment and repeated attachment, preserving
+the developer's service package changes.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 60 tests passed with no
+  failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 50 — Test services that persist membership through Game
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer refactored GameService to use DeckService and PlayerService,
+add children through Game, and persist the complete aggregate with
+GameRepository.update. Codex updated all three service unit test classes to
+match the new dependencies and behavior, including factory-only player creation,
+game-scoped lookups, unsaved deck attachment, rejection propagation, and
+membership writes. Updated Game.removePlayer tests for its Player argument;
+added Game.addDeck and Shoe.addDeck coverage and absent-player removal coverage.
+
+Updated Spring/H2 tests to create players through GameService and verify child
+game IDs after flushing and clearing the persistence context. Added a test that
+adds further decks and players to a reloaded populated game and preserves
+existing relationships. GameEntityMapper assigns each child's owning game;
+CascadeType.ALL merges those children, so saving Game persists their foreign
+keys. Existing orphan removal deletes removed players.
+
+The new tests exposed UnsupportedOperationException because restored shoes
+received immutable lists from Stream.toList. Codex changed Shoe's constructor
+to copy supplied decks into an ArrayList so loaded games can accept decks.
+Preserved service behavior and applied repository-required Java formatting.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial focused run: 38 tests, three errors from immutable shoe collections.
+- After the Shoe fix, spotless:apply, validate, and verify passed; all 73 tests
+  passed with no failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 51 — Retrieve a player's cards through GameService
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested GameService.getPlayerCards returning List<Card>.
+Codex added getPlayerCards(UUID gameId, UUID playerId), delegating to the
+existing game-scoped PlayerService lookup and returning Player.getCards.
+The method uses a read-only transaction and propagates missing-player and
+ownership exceptions. Added tests for ordered cards including duplicates,
+an empty hand, and both lookup failure paths.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 77 tests passed with no
+  failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 52 — Test game lookup before retrieving player cards
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer changed getPlayerCards to resolve the game before the player.
+Codex updated the existing card-retrieval tests to supply the loaded game and
+expect the game repository lookup. Added a missing-game test proving that the
+game NotFoundException propagates before any player lookup. Preserved the
+developer's service implementation.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 78 tests passed with no
+  failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 53 — List game players by descending hand value
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested getPlayers ordered by descending Player.getHandValue.
+Codex added GameService.getPlayers(UUID gameId), resolving the game first and
+delegating to the existing Game.getPlayersByHandValue domain behavior.
+Added tests for descending totals, an empty game, and missing-game exception
+propagation. Existing equal-total ordering behavior remains unchanged.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 81 tests passed with no
+  failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 54 — Deal cards from the shoe to a player
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested CardService.dealCards with cardCount, gameId, and playerId.
+Codex added dealCards(int cardCount, UUID gameId, UUID playerId), returning the
+cards actually dealt. It resolves the game first, uses the existing game-scoped
+PlayerService lookup, removes the next available cards through Shoe.dealCards,
+appends them to the player, and persists the updated Game in one transaction.
+The player is added back to Game because repository reads can return separate
+domain instances. Counts must be positive; requests exceeding the supply deal
+only remaining cards, and an empty shoe deals nothing.
+
+Added an independent ordered undealt-card list to Shoe. Deck attachment appends
+original deck cards; dealing preserves deck contents and duplicate occurrences.
+GameEntity stores undealt cards using the existing JSON converter, and its mapper
+restores the exact remaining list without replenishing exhausted shoes.
+Player copies supplied hands into mutable lists so restored hands accept deals.
+Updated GameFixture to attach decks through Game.addDeck and documented the
+current service scope and undealt-state persistence.
+
+Added service, domain, mapper, and Spring/H2 tests for ordered dealing, duplicate
+faces, exhaustion, invalid counts, missing resources, ownership rejection,
+successive deals across reloads, preservation of deck contents, and removal of
+players without returning dealt cards. Further concurrent mutation handling
+remains outside this step.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial focused tests passed: 25 tests with no failures, errors, or skips.
+- Final spotless:apply, validate, and verify passed: all 101 tests passed with
+  no failures, errors, or skipped tests.
+- Local links in changed documentation and git diff --check passed.
+- No commit, push, or merge was performed.
+
+## Step 55 — Leave deal-count validation to API requests
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing the positive cardCount check because it belongs
+in API request validation. Codex removed the explicit guard from Shoe.dealCards
+and removed the associated domain and service invalid-count tests. Updated the
+implementation plan to identify the API request layer as responsible for this
+validation. No API validation implementation was added in this step.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 97 tests passed with no
+  failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 56 — Move player listing order into GameService
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving getPlayersByHandValue sorting into
+GameService.getPlayers. Codex moved the comparator into the service and removed
+the domain method and its unused import. Descending hand value and ascending
+name for equal totals remain unchanged. Moved equal-total ordering coverage
+from GameTest to GameServiceTest and retained the existing service tests for
+descending totals, empty games, and missing games. Updated the implementation
+plan to place listing order in the service.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 97 tests passed with no
+  failures, errors, or skipped tests.
+- git diff --check passed. No commit or push was performed.
+
+## Step 57 — Persist dealt cards through PlayerService
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested a clearer dealing flow, suggesting PlayerService.addCards
+instead of adding the updated player back to Game. Codex added
+addCards(Player player, List<Card> cards), appending cards through the existing
+Player.addCards domain method and returning PlayerRepository.update's result.
+CardService still resolves the game and checks player ownership before dealing.
+It saves the changed shoe through GameRepository.update, then delegates the hand
+write to PlayerService.addCards within the same transaction. This ordering avoids
+overwriting the updated hand with the game's cascaded stale player snapshot.
+Dealing no longer modifies membership.
+
+Updated service tests for delegation, append order, duplicate cards, empty lists,
+and write failures. Existing persistence tests verify repeated deals across
+reloads. Added a failure-injection persistence test outside a surrounding test
+transaction proving that a player write failure rolls back the shoe write.
+Updated the implementation plan and preserved the developer's Player.addCards
+rename.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Focused service/persistence tests passed: 17 tests with no failures or errors.
+- First full run failed on the new failure test's exception identity assertion:
+  Spring translates the injected IllegalStateException to a data-access exception.
+  Adjusted the assertion to check its cause.
+- Final spotless:apply, validate, and verify passed; all 102 tests passed with no
+  failures, errors, or skipped tests, including transaction rollback verification.
+- git diff --check passed. No commit or push was performed.
+
+## Step 58 — Coordinate dealing inside Game
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer proposed Game.dealCards as the bridge between removing shoe cards
+and giving them to a player. Codex implemented
+Game.dealCards(int cardCount, UUID playerId), finding the existing member before
+consuming cards, then appending the dealt cards to that member's hand.
+CardService retains the existing game-first and game-scoped player lookup error
+behavior, delegates the transfer to Game, and saves the aggregate once.
+Removed the superseded PlayerService.addCards method and its tests.
+
+Added domain tests for transfer order, existing hand preservation, duplicate
+cards, limited supply, exhaustion, unrelated player preservation, and absent
+membership rejection. Updated service tests to prove the game-owned instance
+changes even when the player lookup returns a separate instance. Updated the
+failure-injection persistence test to perform the game write and then throw;
+the transaction rolls back both persisted shoe and hand changes. Existing
+reload, discarded-card, and ownership tests remain passing.
+Updated the domain documentation and implementation plan.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Focused domain/service/persistence tests passed: 22 tests, no failures or errors.
+- spotless:apply, validate, and verify passed; all 102 tests passed with no
+  failures, errors, or skipped tests.
+- Local links in changed documentation and git diff --check passed.
+- No commit or push was performed.
+
+## Step 59 — Adapt dealing tests to a supplied Player
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer changed CardService to resolve Player and pass it to
+Game.dealCards(int cardCount, Player player), requesting test adaptation.
+Codex updated domain tests to pass Player objects, replaced the obsolete
+domain lookup-rejection test with supplied-player transfer coverage, and
+updated the service test to assert that the supplied instance receives cards.
+The separate-instance test also confirms the game's original player remains
+unchanged. Retained persistence tests that require dealt hands to survive reloads.
+No production behavior was changed; Spotless formatted the developer's Java.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 102 tests: 100 passed, two persistence tests failed because dealt
+  hands were empty after reload. GameRepository and PlayerService return
+  separate domain instances. Updating the supplied player does not update
+  the player's instance in Game, which is the graph GameRepository.update saves.
+- Domain and service unit tests passed. The persistence regression remains
+  visible rather than changing assertions to accept lost hands.
+- git diff --check passed. No commit or push was performed.
+
+## Step 60 — Move dealing from CardService to GameService
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer clarified that the dealing application method belongs in
+GameService, requesting the entire CardService.dealCards method be moved.
+Codex moved the method unchanged into GameService and removed CardService.
+Moved its unit tests into GameServiceTest and renamed its persistence tests to
+GameServiceDealingPersistenceTest, using GameService for every deal.
+Updated current service documentation and the Game.dealCards signature reference.
+The supplied-player behavior and previously reported persistence regression
+remain unchanged.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 102 tests: 100 passed, two existing dealing persistence tests failed
+  because dealt hands remain empty after reload. Unit tests and the save-failure
+  rollback test passed. This is the separate-domain-instance issue recorded in
+  step 59, not a new effect of moving the service method.
+- Confirmed no CardService references remain in source or current service docs.
+- git diff --check passed. No commit or push was performed.
+
+## Step 61 — Count undealt cards by suit
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested Shoe.getUndealtSuitCardsCount returning an object with
+hearts, spades, clubs, and diamonds counts. Codex added the method and the
+immutable domain record UndealtSuitCardsCount with those four integer fields.
+Counts use only the undealt list, include zero-valued suits, and retain duplicate
+occurrences across decks. Added tests for empty shoes, multiple decks, partially
+dealt shoes, and restored exhausted shoes without replenishing original cards.
+No service or HTTP endpoint was added.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- Focused ShoeTest passed all 11 tests, including four new suit-count tests.
+- verify ran 106 tests: 104 passed and the two previously recorded dealing
+  persistence tests failed because the supplied player's hand is not persisted.
+  No new test failures were introduced.
+- git diff --check passed. No commit or push was performed.
+
+## Step 62 — Document the approved shoe index and Fisher–Yates design
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer approved documenting the discussed shoe architecture and requested
+the Fisher–Yates algorithm and its rationale. Codex documented an ArrayList for
+order, a dealing cursor, and nested suit/rank EnumMap counters. Explained mutation
+rules, duplicate occurrences, in-memory complexity, and restoration from only
+the persisted active undealt range. Marked these as planned changes; existing
+front-removal dealing and scanned counts remain the current implementation.
+
+Documented the in-place Fisher–Yates bounds, its uniform-permutation property
+under uniform random choices, linear running time, constant auxiliary space,
+void return, and use of a library RNG without a library shuffle operation.
+Compared it with random-priority sorting and random-position collision handling.
+Specified that all undealt cards across decks are shuffled together, leaving
+hands, discarded cards, and counts unchanged. Added implementation verification
+guidance and authoritative NIST/Java references.
+
+### Actual verification
+
+- Checked the NIST Fisher–Yates and Java 26 EnumMap reference links.
+- Checked local documentation links and the new design-section anchor.
+- git diff --check passed.
+- Documentation-only changes; Java/build checks were not rerun.
+- No commit or push was performed.
+
+## Step 63 — Implement cursor-based shoe storage, counters, and Fisher–Yates
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer authorized implementing the documented design. Codex replaced
+front-removal dealing with an ArrayList cursor and introduced nested suit/rank
+EnumMap counters initialized for every face, including zeros. Deck additions
+increment counts and deals decrement them; getUndealtCardCount supports direct
+face queries and getUndealtSuitCardsCount sums the fixed rank counters.
+
+Implemented void Shoe.shuffle using Fisher–Yates over only the active undealt
+range. shuffle() uses the default library RNG; shuffle(RandomGenerator) supports
+controllable random choices. Neither uses a library shuffle operation.
+Counts stay unchanged during permutation and original deck cards remain intact.
+getUndealtCards returns only the active range, so the existing mapper persists
+only remaining cards and restoration resets the cursor and rebuilds counters.
+Made returned deck collections read-only to prevent bypassing counter updates;
+updated ShoeFixture to add decks through the domain method.
+
+Added tests for counter updates, duplicate faces, zero counters, restoration,
+empty/single/exhausted shoes, shuffle bounds, all six permutations of three cards,
+and protection against external list mutation. Added a Spring/H2 persistence test
+covering dealing, shuffling, restoring order/counts/hands, removal, and deck
+addition without returning consumed cards. Updated documentation to mark the
+approved shoe design as implemented. The pre-existing service-level supplied-player
+persistence issue remains outside this shoe change.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- Focused ShoeTest, ShoePersistenceTest, and GameEntityMapperTest passed all
+  23 tests with no failures, errors, or skips.
+- verify ran 114 tests: 112 passed and the two previously recorded
+  GameServiceDealingPersistenceTest cases failed on missing persisted hands.
+  No new failures were introduced.
+- Confirmed production shuffle code calls no library shuffle operation.
+- Local documentation links, the revised design anchor, and git diff --check passed.
+- No commit, push, or merge was performed.
+
+## Step 64 — Extract Fisher–Yates into CardShuffler
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested a designated CardShuffler and updated tests with the
+necessary mock. Codex moved the default RNG selection and Fisher–Yates loop into
+the Spring-independent domain service CardShuffler. Its void shuffle overloads
+accept the mutable card list, active-range cursor, and optionally a generator.
+Shoe delegates both existing shuffle entry points and accepts a CardShuffler
+through a constructor; existing constructors provide a default instance.
+
+Moved algorithm tests to CardShufflerTest, retaining controlled RNG choices,
+dealt-prefix preservation, all permutations of three cards, empty/single/exhausted
+ranges, and duplicate occurrences. Added Shoe tests with a mocked CardShuffler
+to verify the backing list, cursor, explicit generator, in-place changes, and
+unchanged counters. Updated domain documentation and the implementation plan.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- Focused CardShufflerTest, ShoeTest, and ShoePersistenceTest passed all 22 tests
+  with no failures, errors, or skips.
+- verify ran 117 tests: 115 passed and the same two existing
+  GameServiceDealingPersistenceTest cases failed on missing persisted hands.
+  No new failures were introduced.
+- Local documentation links and git diff --check passed.
+- No commit or push was performed.
+
+## Step 65 — Simplify shoe counter initialization
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested simplifying the nested suit/rank initialization loops.
+Codex removed explicit zero prepopulation. adjustCount now uses computeIfAbsent
+to create a suit's rank map and merge to update its face counter. Construction
+only creates the outer EnumMap and counts the supplied undealt cards.
+Missing suit/rank entries return zero in face queries and suit totals.
+Updated the domain documentation. Existing tests cover empty maps, absent faces,
+restoration, dealing, and additions, so no new tests were added.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 117 tests: 115 passed and the same two existing dealing persistence
+  tests failed on missing persisted hands. All shoe/shuffler tests passed.
+- git diff --check passed. No commit or push was performed.
+
+## Step 66 — Extract count state into CardCounter
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer proposed CardCounter alongside CardShuffler. Codex extracted the
+nested EnumMap, incremental additions/removals, face lookups, and suit totals
+into the Spring-independent domain helper CardCounter. Shoe delegates count
+updates and queries and retains ownership of card order and its cursor.
+Default constructors create a fresh counter for each shoe; a constructor accepts
+counter and shuffler dependencies for mocks. Counters are reconstructed from the
+supplied undealt list and are not persisted or shared as singleton services.
+
+Added CardCounter tests for absent faces, duplicate occurrences, multiple decks,
+removal, re-addition, and empty mutations. Added Shoe tests for mocked counter
+delegation, no counter changes during shuffle, and independent shoe state.
+Retained existing counting/dealing/restoration and persistence coverage.
+Updated domain documentation and the implementation plan.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial focused run had one mock-verification failure: Mockito retained a
+  reference to the constructor's list, which later deck additions changed.
+  Moved that verification to immediately after construction.
+- Final spotless:apply and validate passed.
+- verify ran 124 tests: 122 passed and the same two existing dealing persistence
+  cases failed on missing persisted hands. All CardCounter, Shoe, CardShuffler,
+  and ShoePersistence tests passed.
+- Local documentation links and git diff --check passed.
+- No commit or push was performed.
+
+## Step 67 — Expose shoe retrieval and shuffling through GameService
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested GameService.shuffleCards and getShoe, with response
+mappers using Shoe's existing count methods. Codex added void shuffleCards(UUID
+gameId), which resolves the game, shuffles its shoe, and saves the game.
+Added read-only getShoe(UUID gameId), returning the loaded domain shoe.
+Both propagate the repository's game NotFoundException.
+
+Added unit tests for shuffle delegation before persistence, missing-game failures,
+shoe retrieval without writes, and untouched player/deck service dependencies.
+Added a Spring/H2 test verifying service-driven shuffle preserves undealt card
+occurrences, exact shuffled order after reload, counts, and previously saved hands.
+Updated the implementation plan; no dedicated service count methods, response
+mappers, or HTTP endpoints were introduced.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 129 tests: 127 passed and the same two existing dealing persistence
+  cases failed on missing persisted hands. All five new tests passed.
+- Local documentation links and git diff --check passed.
+- No commit or push was performed.
+
+## Step 68 — Remove the unused Shoe RNG overload
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer identified Shoe.shuffle(RandomGenerator) as unnecessary because
+GameService uses only shuffle(). Codex removed the overload and its unused import,
+removed its delegation test, and changed persistence tests to call shuffle().
+CardShuffler retains its generator overload for deterministic algorithm tests.
+Updated the domain documentation to show Shoe's single shuffle entry point.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial compilation caught an incomplete removal leaving the overload after
+  its import was removed; completed the method removal and reran checks.
+- Final spotless:apply and validate passed.
+- verify ran 128 tests: 126 passed and the same two existing dealing persistence
+  cases failed on missing persisted hands. Shoe/shuffler and shuffle persistence
+  tests passed.
+- git diff --check passed. No commit or push was performed.
+
+## Step 69 — Remove the shoe cursor and deal from the end
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer authorized Codex to choose a simpler shoe representation. Codex
+removed nextCardIndex: the ArrayList now contains only undealt occurrences, and
+its last entry is the next card dealt. Removing from the end costs O(cards dealt)
+without shifting or permuting the remaining cards, and releases consumed entries.
+Appending a deck makes those new cards next to deal. CardCounter still receives
+exactly the removed cards. CardShuffler now applies Fisher–Yates to the entire
+list without a cursor parameter; its controllable RNG overload remains.
+
+Updated dealing, mock delegation, shuffle bounds, and persistence expectations
+for tail order, preserving the developer's getCards naming and supplied-player
+behavior. Updated domain documentation and the implementation plan. No new API
+validation or changes to player-hand persistence were introduced.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- An initial test compilation caught stale shuffler assertions; corrected them.
+- Final spotless:apply and validate passed.
+- All 64 focused shoe, shuffler, game, service, mapper, and shoe persistence tests
+  passed.
+- verify ran 128 tests: 126 passed; the same two existing
+  GameServiceDealingPersistenceTest cases failed because supplied player hands
+  are not persisted through the game's player instances.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 70 — Return suit counts as a domain map
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing UndealtSuitCardsCount because its shape belongs
+in a response DTO. Codex removed the record and changed Shoe and CardCounter to
+return Map<Suit, Integer>. CardCounter builds an immutable snapshot containing
+all suits, including zeros, from its existing rank counters. Preserved the
+method names and the developer's Map return-type edit. Updated counter, shoe,
+mock delegation, and persistence tests and the domain diagram/documentation.
+The proposed API response schema remains owned by the response mapping layer.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 128 tests: 126 passed; the same two existing player-hand persistence
+  tests failed. Counter, shoe, and shoe persistence tests passed.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 71 — Return all remaining face counts in required order
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested every remaining suit/value count, ordered hearts, spades,
+clubs, diamonds and King through Ace (value 1). Codex added CardCounter.getCardsCount()
+returning an immutable Map<Suit, Map<Rank, Integer>> snapshot. Nested LinkedHashMaps
+preserve iteration order, ranks sort by numeric value descending, and all 52
+faces are present, including zeros. Retained the existing single-face overload
+and exposed the ordered snapshot through Shoe.getUndealtCardCounts(). Updated
+domain documentation and tested complete ordering, duplicate/removal counts,
+immutability, and snapshot independence.
+
+Preserved the developer's suit-count edits. Initially aligned a mismatched
+per-suit method reference; the developer subsequently restored Shoe's whole-map
+delegation during implementation. Aligned the mock test with that final code.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Final spotless:apply and validate passed.
+- verify ran 129 tests: 127 passed; the same two existing player-hand persistence
+  cases failed. All counter and shoe tests passed, including the new count test.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 72 — Simplify the ordered count method
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested a smaller CardCounter.getCardsCount(). Codex extracted
+per-suit rank ordering into getRankCounts(suit), leaving the public method to
+assemble the suit map. Required ordering, zero counts, and immutable snapshots
+remain unchanged. Preserved the developer's private single-face lookup change
+and adapted Shoe's single-face accessor and existing tests to use the public
+count snapshot. No new abstraction was introduced.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 129 tests: 127 passed; the same two existing player-hand persistence
+  cases failed. All counter and shoe tests passed.
+- git diff --check passed. No commit or push was performed.
+
+## Step 73 — Extract card dealing into CardDealer
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer proposed a CardDealer alongside CardShuffler and CardCounter.
+Codex extracted the tail-removal algorithm and immutable dealt-card result into
+that stateless domain service. Shoe delegates dealing and retains
+cardCounter.removeCards(dealtCards), coordinating its own counts. Existing
+constructors provide a default dealer; an additional constructor accepts a
+collaborator for testing. Request capping, occurrence order, and zero-card
+behavior are preserved without new request validation.
+
+Added dealer tests for tail order, repeated occurrences, exhaustion, zero requests,
+and immutable independent results, plus a Shoe mock delegation/counter test.
+Updated domain documentation and the implementation plan.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 133 tests: 131 passed; the same two existing player-hand persistence
+  cases failed. All new dealer and Shoe delegation tests passed.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 74 — Remove redundant Shoe constructors
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing unnecessary Shoe constructors. Codex reduced
+six constructors to three: empty construction used by Game and fixtures,
+restoration from decks and undealt cards used by persistence, and full
+collaborator injection. Removed deck-only and partial-injection overloads.
+Updated deck-based tests to use ShoeFixture and mock-based tests to supply all
+collaborators explicitly. Preserved per-shoe counters and instance CardDealer
+injection. Updated domain documentation.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 133 tests: 131 passed; the same two existing player-hand persistence
+  cases failed. Constructor caller updates and shoe tests passed.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 75 — Remove Shoe in stages and move card state into Game
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing Shoe because its state and delegation belong in
+Game, and asked for the change in steps. Codex completed these stages:
+
+1. Moved attached decks, ordered undealt cards, counter initialization, and direct
+   CardDealer/CardCounter/CardShuffler delegation into Game. Kept new-game,
+   restoration, and full collaborator-injection constructors. Decks, undealt
+   cards, and membership are copied into mutable owned collections. Dealing
+   still removes from the tail and transfers to the supplied player without
+   changing membership; count updates remain coordinated by Game.
+2. Updated GameEntityMapper to restore/persist Game directly using the existing
+   columns and associations. GameService.shuffleCards calls Game directly;
+   replaced getShoe with read-only getGame for response mappers. Removed Shoe
+   and ShoeFixture. Migrated the existing card collection tests into
+   GameCardsTest, persistence tests into GameCardsPersistenceTest, and updated
+   service, factory, wiring, and mapper callers. No persistence schema change
+   or new API endpoint was introduced.
+3. Updated the UML and implementation plan to describe direct Game ownership,
+   including ordered remaining counts and per-game counters. Removed references
+   to the old model from source code. Historical development entries remain as
+   records of earlier designs; the term shoe in API requirements still describes
+   the physical collection rather than a Java abstraction.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply passed after migrating Java callers.
+- All 61 focused game, card-state, service, mapper, and card persistence tests
+  passed before the final verification stage.
+- validate passed with zero Checkstyle violations.
+- verify ran 133 tests: 131 passed; the same two existing
+  GameServiceDealingPersistenceTest cases failed because supplied player hands
+  are not persisted through the game's separate membership instances. This
+  existing behavior was preserved rather than changing dealing semantics.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 76 — Inject all Game card collaborators
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer explicitly requested injecting CardDealer, CardCounter, and
+CardShuffler into Game and using proper mocks in GameTest. Codex removed all
+Game constructors that created services; its sole constructor accepts state and
+all three collaborators. GameFactory and GameEntityMapper now receive injected
+collaborators and pass them into each Game. CardServicesConfiguration registers
+the stateless dealer/shuffler and a prototype CardCounter. An injected
+ObjectProvider supplies a fresh counter for every created/restored game, avoiding
+shared mutable counts while keeping domain services free of Spring annotations.
+Game still rebuilds counts from the supplied undealt state by calling its counter.
+
+Updated fixtures and explicit constructions. GameTest uses Mockito for all three
+services and verifies card transfer, deck count updates, restoration counting,
+shuffle delegation, and returned count snapshots. Existing GameCardsTest retains
+real-service behavior coverage. Added Spring verification of independent counts
+across two newly created games and repeated restorations. Updated domain docs
+and the implementation plan.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- Initial compilation caught ObjectProvider being non-functional in this version;
+  replaced test method references with mocked providers. A mock verification
+  caught equal deck card lists matching two calls; used distinct deck fixtures.
+- Final spotless:apply and validate passed.
+- All 38 focused domain, factory, mapper, wiring, and persistence tests passed.
+- verify ran 137 tests: 135 passed; the same two existing player-hand persistence
+  cases failed. All new injection and counter-isolation checks passed.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 77 — Restore the Shoe boundary and simplify mapping
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer reconsidered direct Game card-service injection and requested
+restoring Shoe to separate game context from card operations. Codex restored
+Shoe with decks, ordered undealt cards, and delegation to instance CardDealer,
+CardCounter, and CardShuffler. Its three constructors support empty state,
+restoration, and full mock injection; default construction creates a fresh
+per-shoe counter. Game again owns Shoe and players and bridges dealing into the
+supplied player's hand.
+
+Simplified GameFactory to its ID-generator dependency and GameEntityMapper to
+its three mapper dependencies. Removed CardServicesConfiguration and prototype
+provider wiring. Persistence still uses the existing undealt-card column and
+rebuilds counts from the saved list. GameService shuffles through Shoe. Preserved
+the developer's current getGame implementation, deleted combined game-card test
+files, and removal of the single-face count method. GameTest now mocks Shoe;
+ShoeTest tests helper delegation with mocks. Adapted remaining fixtures and tests
+and retained the creation/restoration counter-isolation check. Updated the UML
+and implementation plan while retaining historical development entries.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- The initial focused run found a constructor mock argument changed by a later
+  deck addition; verified initialization before the mutation and reran checks.
+- Final spotless:apply and validate passed.
+- All 47 focused game, shoe, factory, mapper, wiring, and service tests passed.
+- verify ran 117 tests: 115 passed; the same two existing player-hand persistence
+  cases failed. The smaller suite also reflects the developer's prior removal
+  of separate combined game-card tests, which were not reintroduced.
+- Local documentation link targets and git diff --check passed.
+- No commit or push was performed.
+
+## Step 78 — Persist deck identity and ownership without duplicated cards
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer approved removing the game/shoe deck collections and stored deck
+cards now that GameEntity stores undealt_cards. Codex removed those collections
+and DeckEntity.cards. Deck rows retain ID and game ownership to prevent repeat
+attachment. DeckFactory's explicit-ID overload reconstructs standard cards without
+calling IdGenerator; GameEntityMapper restores only saved remaining cards.
+DeckService now saves attachment within the existing GameService transaction.
+InMemoryGameRepository explicitly deletes attached decks before deleting a game,
+preserving deletion behavior and retaining unattached decks.
+
+Updated domain and implementation documentation, fixtures, mapper/entity tests,
+and factory coverage. Added dedicated Spring/H2 persistence tests for reload,
+repeat attachment rejection, exhausted games receiving new decks, and deletion
+of owned records. Preserved concurrent developer edits removing
+PokerApplicationTests and updating README; lifecycle coverage uses its own class.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Final spotless:apply, validate, and verify passed; all 75 tests passed with no
+  failures, errors, or skips.
+- Changed documentation link targets exist and git diff --check passed.
+- No commit or push was performed for this step.
+
+## Step 79 — Restore value mapping for stored deck cards
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested reverting DeckEntityMapper and keeping factories out of
+all mappers. Codex restored DeckEntityMapper exactly to its pre-simplification
+implementation using CardEntityMapper. Restored DeckEntity card storage and the
+related fixture and mapper/entity tests required by that implementation. Removed
+the now-unused explicit-ID DeckFactory overload and its test. GameEntity and Shoe
+still omit deck collections; attachment persistence and explicit deletion remain.
+Updated documentation and preserved the developer's staged deletion of
+DeckLifecyclePersistenceTest.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 71 tests passed with no
+  failures, errors, or skips.
+- DeckEntityMapper matches commit d703149 exactly; no mapper references a factory.
+- git diff --check passed. No commit or push was performed for this step.
+
+## Step 80 — Generate standard deck cards only when adding to a game
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving card generation from DeckFactory into Deck and
+performing it when adding a deck to a game. Codex reduced Deck to identity and
+ownership state, added Deck.generateCards(), and made Shoe.addDeck generate one
+standard card list for appending and counting. DeckFactory supplies only new IDs.
+DeckEntity stores only ID and game ownership. DeckEntityMapper maps those values
+without factories, card mapping, or card generation. Existing attachment writes
+and deletion behavior remain in place.
+
+Updated fixtures, factory/mapper tests, and domain documentation. Moved standard
+52-face coverage to DeckTest and added real Shoe coverage for two decks, duplicate
+occurrences, exhaustion, and remaining counts. Preserved the developer's staged
+removal of DeckLifecyclePersistenceTest.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Final spotless:apply, validate, and verify passed; all 73 tests passed with no
+  failures, errors, or skips.
+- Documentation link targets exist and git diff --check passed.
+- No commit or push was performed for this step.

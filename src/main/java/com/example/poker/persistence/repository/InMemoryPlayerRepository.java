@@ -1,6 +1,7 @@
 package com.example.poker.persistence.repository;
 
 import com.example.poker.domain.exception.NotFoundException;
+import com.example.poker.domain.exception.PlayerNotPartOfGameException;
 import com.example.poker.domain.model.Player;
 import com.example.poker.domain.repository.PlayerRepository;
 import com.example.poker.persistence.entity.GameEntity;
@@ -45,6 +46,15 @@ public class InMemoryPlayerRepository implements PlayerRepository {
     @Override
     public void deleteById(@NonNull UUID id) {
         playerRepository.delete(this.getEntityById(id));
+    }
+
+    @Override
+    public Player getByIdAndGameId(UUID id, UUID gameId) {
+        PlayerEntity player = this.getEntityById(id);
+        if (!player.getGame().getId().equals(gameId)) {
+            throw new PlayerNotPartOfGameException(id, gameId);
+        }
+        return playerEntityMapper.fromEntity(player);
     }
 
     private PlayerEntity getEntityById(UUID id) {
