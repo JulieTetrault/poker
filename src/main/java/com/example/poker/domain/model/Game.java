@@ -53,6 +53,7 @@ public final class Game {
     public List<Card> dealCards(int cardCount, Player player) {
         List<Card> dealt = shoe.dealCards(cardCount);
         player.addCards(dealt);
+        players.replace(player.getId(), player);
         return dealt;
     }
 }
