@@ -1,18 +1,12 @@
 package com.example.poker.api.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-public record GetUndealtSuitCardsResponse(
-        int king,
-        int queen,
-        int jack,
-        @JsonProperty("10") int ten,
-        @JsonProperty("9") int nine,
-        @JsonProperty("8") int eight,
-        @JsonProperty("7") int seven,
-        @JsonProperty("6") int six,
-        @JsonProperty("5") int five,
-        @JsonProperty("4") int four,
-        @JsonProperty("3") int three,
-        @JsonProperty("2") int two,
-        int ace) {}
+public record GetUndealtSuitCardsResponse(@JsonValue Map<String, Integer> counts) {
+    public GetUndealtSuitCardsResponse {
+        counts = Collections.unmodifiableMap(new LinkedHashMap<>(counts));
+    }
+}

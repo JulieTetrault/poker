@@ -32,7 +32,7 @@ class DeckTest {
         // THEN
         exception
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Deck already attached: " + SOME_DECK_ID);
+                .hasMessage("Deck already attached to a game: " + SOME_DECK_ID);
         assertThat(deck.getGameId()).isEqualTo(SOME_GAME_ID);
     }
 
@@ -45,7 +45,7 @@ class DeckTest {
         // THEN
         exception
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Deck already attached: " + SOME_DECK_ID);
+                .hasMessage("Deck already attached to a game: " + SOME_DECK_ID);
         assertThat(deck.getGameId()).isEqualTo(SOME_GAME_ID);
     }
 

@@ -3,7 +3,7 @@
   "info": {
     "title": "Card Shoe API \u2014 proposed contract",
     "version": "0.1.0-draft",
-    "description": "Endpoints and centralized exception handling are implemented. Request validation and additional HTTP error mappings remain planned. See implementation-plan.md for confirmed behavior and remaining proposals. Mock responses are stateless examples, not game behavior. JSON request objects reject unknown fields, missing/null fields and invalid types; no numeric coercion. Errors use detail, status, and a stable code. Missing resources return 404, already attached decks return 422, and all other exceptions currently return 500; other error responses below remain planned. Unknown routes return 404 ENDPOINT_NOT_FOUND. In-memory storage remains a proposal."
+    "description": "Endpoints and centralized exception handling are implemented. Request validation is implemented; additional HTTP error mappings remain planned. See implementation-plan.md for confirmed behavior and remaining proposals. Mock responses are stateless examples, not game behavior. JSON request objects reject unknown fields, missing/null fields and invalid types; no numeric coercion. Errors use detail, status, and a stable code. Missing resources return 404, already attached decks return 422, invalid bodies and UUID path parameters return 400, and other exceptions currently return 500; additional HTTP error responses below remain planned. Unknown routes return 404 ENDPOINT_NOT_FOUND. In-memory storage remains a proposal."
   },
   "servers": [
     {
@@ -69,21 +69,21 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   },
-                  "VALIDATION_FAILED": {
+                  "INVALID_FIELDS": {
                     "value": {
                       "detail": "One or more request fields are invalid.",
                       "status": 400,
-                      "code": "VALIDATION_FAILED"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -214,14 +214,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -365,7 +365,7 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -464,21 +464,21 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   },
-                  "VALIDATION_FAILED": {
+                  "INVALID_FIELDS": {
                     "value": {
                       "detail": "One or more request fields are invalid.",
                       "status": 400,
-                      "code": "VALIDATION_FAILED"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -739,14 +739,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -893,14 +893,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -1030,14 +1030,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -1164,21 +1164,21 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   },
-                  "VALIDATION_FAILED": {
+                  "INVALID_FIELDS": {
                     "value": {
                       "detail": "One or more request fields are invalid.",
                       "status": 400,
-                      "code": "VALIDATION_FAILED"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -1374,14 +1374,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -1511,14 +1511,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -1662,7 +1662,7 @@
                     "value": [
                       {
                         "suit": "hearts",
-                        "rank": "Ace"
+                        "rank": "ace"
                       }
                     ]
                   },
@@ -1685,14 +1685,14 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -1869,21 +1869,21 @@
                     "value": {
                       "detail": "Request body must be valid JSON.",
                       "status": 400,
-                      "code": "INVALID_REQUEST"
+                      "code": "BAD_REQUEST"
                     }
                   },
                   "INVALID_PARAMETER": {
                     "value": {
                       "detail": "Parameter 'gameId' must be a UUID.",
                       "status": 400,
-                      "code": "INVALID_PARAMETER"
+                      "code": "BAD_REQUEST"
                     }
                   },
-                  "VALIDATION_FAILED": {
+                  "INVALID_FIELDS": {
                     "value": {
                       "detail": "One or more request fields are invalid.",
                       "status": 400,
-                      "code": "VALIDATION_FAILED"
+                      "code": "BAD_REQUEST"
                     }
                   }
                 }
@@ -2157,7 +2157,7 @@
       "Rank": {
         "type": "string",
         "enum": [
-          "Ace",
+          "ace",
           "2",
           "3",
           "4",
@@ -2167,9 +2167,9 @@
           "8",
           "9",
           "10",
-          "Jack",
-          "Queen",
-          "King"
+          "jack",
+          "queen",
+          "king"
         ]
       },
 

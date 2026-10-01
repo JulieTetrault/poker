@@ -1,5 +1,5 @@
 package com.example.poker.api.request;
 
-import java.util.UUID;
+import jakarta.validation.constraints.NotNull;
 
-public record AddDeckRequest(UUID deckId) {}
+public record AddDeckRequest(@NotNull(message = "Field 'deckId' is required.") String deckId) {}

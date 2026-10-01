@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.example.poker.domain.exception.NotFoundException;
-import com.example.poker.domain.exception.PlayerNotPartOfGameException;
+import com.example.poker.domain.exception.PlayerNotFoundInGameException;
 import com.example.poker.domain.model.Player;
 import com.example.poker.fixture.GameEntityFixture;
 import com.example.poker.fixture.PlayerEntityFixture;
@@ -146,11 +146,11 @@ class InMemoryPlayerRepositoryTest {
                                         SOME_PLAYER_ENTITY.getId(), SOME_GAME_ENTITY.getId()));
         // THEN
         exception
-                .isInstanceOf(PlayerNotPartOfGameException.class)
+                .isInstanceOf(PlayerNotFoundInGameException.class)
                 .hasMessage(
                         "Player "
                                 + SOME_PLAYER_ENTITY.getId()
-                                + " is not part of game: "
+                                + " is not found in game "
                                 + SOME_GAME_ENTITY.getId());
         verify(playerRepository).findById(SOME_PLAYER_ENTITY.getId());
         verifyNoMoreInteractions(playerRepository);

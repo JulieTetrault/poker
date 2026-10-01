@@ -2,10 +2,9 @@
 
 Status: implementation steps with confirmed API decisions, September 30, 2026.
 
-Game and deck endpoints and centralized exception handling are implemented;
-request validation remains deferred. Follow the [requirements](requirements.md),
-[domain model](domain.md), and [OpenAPI contract](openapi.json). Use the
-[manual testing guide](manual-api-testing.md) when the API is available.
+Game and deck endpoints, request validation, and centralized exception handling
+are implemented. Follow the [requirements](requirements.md),
+[domain model](domain.md), and [OpenAPI contract](openapi.json).
 
 ## Architecture
 
@@ -469,6 +468,26 @@ positive deal counts.
 
 Reject unknown fields and incorrect JSON types rather than coercing them.
 
+Names use the Boot-managed validation starter, @Valid, @NotBlank, and
+@Size(max = 100), with explicit field-specific constraint messages.
+
+GameController explicitly calls UUIDValidator for body deck IDs before
+application services. DealCardsRequest uses @Valid and Jakarta @NotNull,
+@Min(1), and @Max(Integer.MAX_VALUE) on Integer count. Path IDs use @PathVariable UUID arguments
+and Spring conversion; conversion errors return 400 BAD_REQUEST.
+Count constraints reject missing/null and nonpositive counts. Strict Jackson
+integer binding rejects fractions, strings, booleans, and overflow, which the
+central mapper reports with a count-specific detail.
+For body IDs, UUIDValidator requires standard 36-character hexadecimal UUID text;
+CardCountValidator has been removed. There is no custom UUID deserializer,
+Spring binding editor, or Jackson exception-path inspection.
+
+UUIDValidator throws RequestValidationException, centrally mapped to
+400 BAD_REQUEST with its public detail. Spring name constraint failures
+also return 400 BAD_REQUEST. Jackson still rejects unknown properties,
+trailing JSON values, and non-string names; unreadable bodies return
+400 BAD_REQUEST. Existing 404, 422, and 500 mappings remain.
+
 ### 5. Create application services
 
 Application services orchestrate:
@@ -569,7 +588,9 @@ Do not write domain behavior into repository classes.
 ### 7. Create controllers
 
 Implemented as `GameController` and `DeckController`, including game-scoped
-player routes, request/response DTOs, and separate response mappers exposing `toResponse` methods. The developer labels
+player routes, request/response DTOs, and `GameResponseMapper` for all responses returned by GameController and
+`DeckResponseMapper` for responses returned by DeckController.
+`ErrorResponseMapper` remains separate. The developer labels
 this work implementation step 5. Request validation and centralized exception
 handling are separate steps; no tests were added in the controller step.
 
@@ -732,7 +753,7 @@ ErrorResponseMapper. Controllers do not catch exceptions. Responses use
 - All other exceptions: 500 with INTERNAL_ERROR and a generic detail. The
   exception is logged server-side; its internal message is not sent to clients.
 
-Request validation and additional HTTP error mappings remain future work.
+Request validation is implemented; additional HTTP error mappings remain future work.
 The statuses above supersede older proposed mappings.
 
 Use:
