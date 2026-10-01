@@ -150,7 +150,7 @@ class InMemoryPlayerRepositoryTest {
                 .hasMessage(
                         "Player "
                                 + SOME_PLAYER_ENTITY.getId()
-                                + " is not part of game: "
+                                + " is not found in game "
                                 + SOME_GAME_ENTITY.getId());
         verify(playerRepository).findById(SOME_PLAYER_ENTITY.getId());
         verifyNoMoreInteractions(playerRepository);
