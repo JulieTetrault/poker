@@ -1,18 +1,12 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "Card Shoe API \u2014 proposed contract",
-    "version": "0.1.0-draft",
-    "description": "Endpoints and centralized exception handling are implemented. Request validation is implemented; additional HTTP error mappings remain planned. See implementation-plan.md for confirmed behavior and remaining proposals. Mock responses are stateless examples, not game behavior. JSON request objects reject unknown fields, missing/null fields and invalid types; no numeric coercion. Errors use detail, status, and a stable code. Missing resources return 404, already attached decks return 422, invalid bodies and UUID path parameters return 400, and other exceptions currently return 500; additional HTTP error responses below remain planned. Unknown routes return 404 ENDPOINT_NOT_FOUND. In-memory storage remains a proposal."
+    "title": "Poker API",
+    "version": "0.1.0-draft"
   },
   "servers": [
     {
-      "url": "http://localhost:4010",
-      "description": "Stateless contract mock (Prism; start separately)"
-    },
-    {
-      "url": "http://localhost:8080",
-      "description": "Planned Spring API (endpoints not implemented yet)"
+      "url": "http://localhost:8080"
     }
   ],
   "tags": [
@@ -37,7 +31,6 @@
           "Games"
         ],
         "summary": "Create an empty game",
-        "description": "Create a named game with an empty shoe and no players. In-memory state is lost on restart.",
         "responses": {
           "201": {
             "description": "Create an empty game.",
@@ -51,123 +44,6 @@
                     "value": {
                       "id": "11111111-1111-4111-8111-111111111111",
                       "name": "Example game"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_FIELDS": {
-                    "value": {
-                      "detail": "One or more request fields are invalid.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported Media Type. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "UNSUPPORTED_MEDIA_TYPE": {
-                    "value": {
-                      "detail": "Content-Type must be application/json.",
-                      "status": 415,
-                      "code": "UNSUPPORTED_MEDIA_TYPE"
                     }
                   }
                 }
@@ -197,120 +73,9 @@
           "Games"
         ],
         "summary": "Delete a game",
-        "description": "Delete the game and everything it owns: shoe, assigned decks, cards, players and hands. Unassigned decks survive. Players must be added again for a new game. Repeat deletion returns 404. No request body is accepted.",
         "responses": {
           "204": {
             "description": "No response body."
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "parameters": [
@@ -334,7 +99,6 @@
           "Decks"
         ],
         "summary": "Create a standard deck",
-        "description": "Creates one unassigned physical deck: 52 cards, four suits and ranks Ace through King. No request body is accepted.",
         "responses": {
           "201": {
             "description": "Create a standard deck.",
@@ -352,90 +116,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -447,172 +127,9 @@
           "Decks"
         ],
         "summary": "Permanently add a deck to a game",
-        "description": "Attach an unassigned deck to this game shoe. A deck belongs to at most one shoe, and a shoe belongs to one game. Assignment is atomic; attached decks cannot be removed. Duplicate or cross-game attachment returns 422 DECK_ALREADY_ASSIGNED.",
         "responses": {
           "204": {
             "description": "Deck added. No response body."
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_FIELDS": {
-                    "value": {
-                      "detail": "One or more request fields are invalid.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported Media Type. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "UNSUPPORTED_MEDIA_TYPE": {
-                    "value": {
-                      "detail": "Content-Type must be application/json.",
-                      "status": 415,
-                      "code": "UNSUPPORTED_MEDIA_TYPE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  },
-                  "DECK_NOT_FOUND": {
-                    "value": {
-                      "detail": "Deck '22222222-2222-4222-8222-222222222222' was not found.",
-                      "status": 404,
-                      "code": "DECK_NOT_FOUND"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Deck is already attached. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "DECK_ALREADY_ASSIGNED": {
-                    "value": {
-                      "detail": "Deck '22222222-2222-4222-8222-222222222222' is already assigned to a game.",
-                      "status": 422,
-                      "code": "DECK_ALREADY_ASSIGNED"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "requestBody": {
@@ -649,7 +166,6 @@
           "Decks"
         ],
         "summary": "Count undealt copies of each face",
-        "description": "Count undealt cards by suit and rank, including zeros. Return suit objects in hearts/spades/clubs/diamonds order, with ranks King down to Ace. Only undealt cards contribute. No request body is accepted.",
         "responses": {
           "200": {
             "description": "Count undealt copies of each face.",
@@ -726,116 +242,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "parameters": [
@@ -859,7 +265,6 @@
           "Decks"
         ],
         "summary": "Count undealt cards by suit",
-        "description": "Return counts for all four suits, including zeros: hearts, spades, clubs, diamonds. Only undealt cards contribute. No request body is accepted.",
         "responses": {
           "200": {
             "description": "Count undealt cards by suit.",
@@ -875,116 +280,6 @@
                       "spades": 13,
                       "clubs": 13,
                       "diamonds": 13
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
                     }
                   }
                 }
@@ -1013,120 +308,9 @@
           "Decks"
         ],
         "summary": "Shuffle remaining cards",
-        "description": "Custom Fisher\u2013Yates using a library RNG, never a library shuffle. Allowed at any time. Empty/single-card shoe is a no-op; hands and counts stay unchanged. No request body is accepted.",
         "responses": {
           "204": {
             "description": "No response body."
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "parameters": [
@@ -1150,144 +334,7 @@
           "Players"
         ],
         "summary": "Add a player",
-        "description": "PROPOSAL: generate a game-scoped UUID, trim display name, allow duplicate names; start with an empty hand.",
         "responses": {
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_FIELDS": {
-                    "value": {
-                      "detail": "One or more request fields are invalid.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported Media Type. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "UNSUPPORTED_MEDIA_TYPE": {
-                    "value": {
-                      "detail": "Content-Type must be application/json.",
-                      "status": 415,
-                      "code": "UNSUPPORTED_MEDIA_TYPE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  }
-                }
-              }
-            }
-          },
           "201": {
             "description": "Add a player.",
             "content": {
@@ -1339,7 +386,6 @@
           "Players"
         ],
         "summary": "List players by hand value",
-        "description": "Sum Ace=1 through King=13. Sort by hand value descending, then player UUID ascending. Include empty hands; no players returns []. No request body is accepted.",
         "responses": {
           "200": {
             "description": "List players by hand value.",
@@ -1357,116 +403,6 @@
                         "handValue": 1
                       }
                     ]
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
                   }
                 }
               }
@@ -1494,127 +430,9 @@
           "Players"
         ],
         "summary": "Remove a player",
-        "description": "Remove the player and discard their cards. Those cards remain unavailable for future deals and never return to the shoe. Cross-game player IDs return 404. No request body is accepted.",
         "responses": {
           "204": {
             "description": "No response body."
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  },
-                  "PLAYER_NOT_FOUND": {
-                    "value": {
-                      "detail": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
-                      "status": 404,
-                      "code": "PLAYER_NOT_FOUND"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "parameters": [
@@ -1648,7 +466,6 @@
           "Cards"
         ],
         "summary": "Get a player hand",
-        "description": "Return held cards in deal order as an array; an empty hand returns []. No request body is accepted.",
         "responses": {
           "200": {
             "description": "Get a player hand.",
@@ -1668,123 +485,6 @@
                   },
                   "empty": {
                     "value": []
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  },
-                  "PLAYER_NOT_FOUND": {
-                    "value": {
-                      "detail": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
-                      "status": 404,
-                      "code": "PLAYER_NOT_FOUND"
-                    }
                   }
                 }
               }
@@ -1822,7 +522,6 @@
           "Cards"
         ],
         "summary": "Deal cards to a player",
-        "description": "Atomically deal min(count, remaining cards). Return dealtCards as the number actually dealt and remainingCards as the undealt count after the operation. Requesting 13 with 10 remaining returns {dealtCards:10, remainingCards:0}. An empty shoe returns both counts as zero.",
         "responses": {
           "200": {
             "description": "Deal cards to a player.",
@@ -1851,149 +550,6 @@
                     "value": {
                       "dealtCards": 10,
                       "remainingCards": 0
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INVALID_REQUEST": {
-                    "value": {
-                      "detail": "Request body must be valid JSON.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_PARAMETER": {
-                    "value": {
-                      "detail": "Parameter 'gameId' must be a UUID.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  },
-                  "INVALID_FIELDS": {
-                    "value": {
-                      "detail": "One or more request fields are invalid.",
-                      "status": 400,
-                      "code": "BAD_REQUEST"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Method Not Allowed. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "detail": "The HTTP method is not supported for this endpoint.",
-                      "status": 405,
-                      "code": "METHOD_NOT_ALLOWED"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Allow": {
-                "description": "Methods supported by this resource, including applicable HEAD/OPTIONS.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Client does not accept the response media type. The body may be empty if application/problem+json is also unacceptable.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "NOT_ACCEPTABLE": {
-                    "value": {
-                      "detail": "The requested response media type is not supported.",
-                      "status": 406,
-                      "code": "NOT_ACCEPTABLE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "value": {
-                      "detail": "An unexpected error occurred.",
-                      "status": 500,
-                      "code": "INTERNAL_ERROR"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Unsupported Media Type. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "UNSUPPORTED_MEDIA_TYPE": {
-                    "value": {
-                      "detail": "Content-Type must be application/json.",
-                      "status": 415,
-                      "code": "UNSUPPORTED_MEDIA_TYPE"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found. See named examples and shared error catalogue.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "examples": {
-                  "GAME_NOT_FOUND": {
-                    "value": {
-                      "detail": "Game '11111111-1111-4111-8111-111111111111' was not found.",
-                      "status": 404,
-                      "code": "GAME_NOT_FOUND"
-                    }
-                  },
-                  "PLAYER_NOT_FOUND": {
-                    "value": {
-                      "detail": "Player '33333333-3333-4333-8333-333333333333' was not found in game '11111111-1111-4111-8111-111111111111'.",
-                      "status": 404,
-                      "code": "PLAYER_NOT_FOUND"
                     }
                   }
                 }
@@ -2058,7 +614,6 @@
           }
         }
       },
-
       "Deck": {
         "type": "object",
         "additionalProperties": false,
@@ -2090,7 +645,6 @@
           }
         }
       },
-
       "Game": {
         "type": "object",
         "additionalProperties": false,
@@ -2121,7 +675,6 @@
           }
         }
       },
-
       "Player": {
         "type": "object",
         "additionalProperties": false,
@@ -2153,7 +706,6 @@
           }
         }
       },
-
       "Rank": {
         "type": "string",
         "enum": [
@@ -2172,7 +724,6 @@
           "king"
         ]
       },
-
       "Shoe": {
         "type": "object",
         "additionalProperties": false,
@@ -2188,7 +739,6 @@
           }
         }
       },
-
       "Suit": {
         "type": "string",
         "enum": [
@@ -2198,7 +748,6 @@
           "diamonds"
         ]
       },
-
       "AddDeckRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -2212,7 +761,6 @@
           }
         }
       },
-
       "AddPlayerRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -2229,7 +777,6 @@
           }
         }
       },
-
       "CreateGameRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -2246,7 +793,6 @@
           }
         }
       },
-
       "AddPlayerResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2264,7 +810,6 @@
           }
         }
       },
-
       "CreateDeckResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2278,7 +823,6 @@
           }
         }
       },
-
       "CreateGameResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2296,7 +840,6 @@
           }
         }
       },
-
       "DealCardsRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -2311,7 +854,6 @@
           }
         }
       },
-
       "DealCardsResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2332,7 +874,6 @@
           }
         }
       },
-
       "ErrorResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2355,13 +896,12 @@
           }
         }
       },
-
       "GetPlayerCardResponse": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-            "suit",
-            "rank"
+          "suit",
+          "rank"
         ],
         "properties": {
           "suit": {
@@ -2372,7 +912,6 @@
           }
         }
       },
-
       "GetPlayerCardsResponse": {
         "type": "array",
         "additionalProperties": false,
@@ -2380,7 +919,6 @@
           "$ref": "#/components/schemas/GetPlayerCardResponse"
         }
       },
-
       "GetPlayerHandValueResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2404,7 +942,6 @@
           }
         }
       },
-
       "GetPlayersHandValueResponse": {
         "type": "array",
         "additionalProperties": false,
@@ -2412,7 +949,6 @@
           "$ref": "#/components/schemas/GetPlayerHandValueResponse"
         }
       },
-
       "GetUndealtCardsResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2441,7 +977,6 @@
           }
         }
       },
-
       "GetUndealtSuitCardsResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2528,7 +1063,6 @@
           }
         }
       },
-
       "GetUndealtSuitCardsCountResponse": {
         "type": "object",
         "additionalProperties": false,
