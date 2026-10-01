@@ -5,8 +5,8 @@ import com.example.poker.domain.model.Deck;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CreateDeckResponseMapper {
-    public CreateDeckResponse toResponse(Deck deck) {
+public class DeckResponseMapper {
+    public CreateDeckResponse toCreateDeckResponse(Deck deck) {
         return new CreateDeckResponse(deck.getId());
     }
 }

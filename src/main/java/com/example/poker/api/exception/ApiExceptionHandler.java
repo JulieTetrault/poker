@@ -4,7 +4,7 @@ import com.example.poker.api.mapper.ErrorResponseMapper;
 import com.example.poker.api.response.ErrorResponse;
 import com.example.poker.domain.exception.DeckAlreadyAttachedException;
 import com.example.poker.domain.exception.NotFoundException;
-import com.example.poker.domain.exception.PlayerNotPartOfGameException;
+import com.example.poker.domain.exception.PlayerNotFoundInGameException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -26,15 +26,21 @@ public class ApiExceptionHandler {
         return toResponseEntity(errorResponseMapper.toResponse(exception));
     }
 
-    @ExceptionHandler(PlayerNotPartOfGameException.class)
-    public ResponseEntity<ErrorResponse> handlePlayerNotPartOfGame(
-            PlayerNotPartOfGameException exception) {
+    @ExceptionHandler(PlayerNotFoundInGameException.class)
+    public ResponseEntity<ErrorResponse> handlePlayerNotFoundInGame(
+            PlayerNotFoundInGameException exception) {
         return toResponseEntity(errorResponseMapper.toResponse(exception));
     }
 
     @ExceptionHandler(DeckAlreadyAttachedException.class)
     public ResponseEntity<ErrorResponse> handleDeckAlreadyAttached(
             DeckAlreadyAttachedException exception) {
+        return toResponseEntity(errorResponseMapper.toResponse(exception));
+    }
+
+    @ExceptionHandler(InvalidIdentifierException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidIdentifier(
+            InvalidIdentifierException exception) {
         return toResponseEntity(errorResponseMapper.toResponse(exception));
     }
 

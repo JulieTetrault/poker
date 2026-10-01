@@ -1,6 +1,6 @@
 package com.example.poker.api.controller;
 
-import com.example.poker.api.mapper.CreateDeckResponseMapper;
+import com.example.poker.api.mapper.DeckResponseMapper;
 import com.example.poker.api.response.CreateDeckResponse;
 import com.example.poker.service.DeckService;
 import org.springframework.http.HttpStatus;
@@ -13,17 +13,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/decks")
 public class DeckController {
     private final DeckService deckService;
-    private final CreateDeckResponseMapper createDeckResponseMapper;
+    private final DeckResponseMapper deckResponseMapper;
 
-    public DeckController(
-            DeckService deckService, CreateDeckResponseMapper createDeckResponseMapper) {
+    public DeckController(DeckService deckService, DeckResponseMapper deckResponseMapper) {
         this.deckService = deckService;
-        this.createDeckResponseMapper = createDeckResponseMapper;
+        this.deckResponseMapper = deckResponseMapper;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateDeckResponse createDeck() {
-        return createDeckResponseMapper.toResponse(deckService.createDeck());
+        return deckResponseMapper.toCreateDeckResponse(deckService.createDeck());
     }
 }

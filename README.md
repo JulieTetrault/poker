@@ -14,9 +14,7 @@ Business endpoints are not implemented yet. Preview the contract in Swagger UI:
 python3 -m http.server 8000 --bind 127.0.0.1 --directory docs
 ```
 
-Open <http://localhost:8000/index.html>. See the
-[manual testing guide](docs/manual-api-testing.md) for the optional stateless mock,
-example errors, and acceptance scenarios for the real API.
+Open <http://localhost:8000/index.html>.
 
 ## Toolchain
 

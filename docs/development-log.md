@@ -2693,3 +2693,428 @@ PR preparation. Request validation remains outside this PR.
 - The implementation's Java 26.0.2-tem Maven Wrapper spotless:apply, validate,
   and verify checks passed in step 85; all 73 existing tests passed.
 - git diff --check and OpenAPI JSON parsing passed during PR preparation.
+
+## Step 87 — Validate API requests and return 400 for invalid input
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested 400 ErrorResponse bodies for invalid names, UUIDs, and
+deal counts, using Spring validation where possible. Codex added the Boot-managed
+validation starter and @Valid to request-body controller arguments. Names use
+@NotBlank and @Size(max = 100), following the contract; deckId uses @NotNull on
+its UUID field, and count uses @NotNull/@Positive on its Integer field.
+
+RequestValidationConfiguration customizes Boot's Jackson mapper to reject
+unknown fields, trailing JSON values, and scalar coercion. Names must be JSON
+strings and counts must be positive JSON integers within the int32 range.
+UUID bodies use a strict deserializer; PathParameterValidationAdvice registers
+a Spring WebDataBinder editor for UUID arguments. Both require standard
+36-character hexadecimal UUID text. These small format adapters are needed
+because default UUID parsing accepts alternate representations; no custom
+Bean Validation constraint was introduced.
+
+Extended the centralized handler and response mapper: constraint violations
+return 400 VALIDATION_FAILED, unreadable/invalid bodies return 400 INVALID_REQUEST,
+and invalid UUID path arguments return 400 INVALID_PARAMETER. Existing 404, 422,
+and 500 mappings remain. Updated the plan and OpenAPI implementation status.
+No repository tests were added or changed, preserving the earlier instruction.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Initial verify was blocked by writing the new dependency to Maven's cache;
+  reran with approved access to resolve the validation starter.
+- Final spotless:apply, validate, and verify passed; all 73 existing tests passed
+  with no failures, errors, or skips.
+- Ran 49 temporary in-memory Spring MVC checks outside the repository, covering
+  malformed/invalid bodies, blank/long/numeric names, unknown fields, trailing
+  JSON, missing/null/negative/zero/fractional/string/overflow counts, malformed
+  and alternate UUID forms in bodies and both path IDs, and valid requests.
+  Initial checks exposed Spring's permissive UUID editor; corrected binding
+  and all 49 final checks passed with formatted 400 bodies for invalid input.
+- Parsed OpenAPI JSON and git diff --check passed. No server was started, and
+  no commit or push was performed.
+
+## Step 88 — Identify invalid fields in request error details
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested specific error details for invalid IDs and counts instead
+of the generic invalid-body message. Codex updated ErrorResponseMapper to read
+Jackson's structured property paths and Spring's field errors. Invalid deckId,
+count, and name values now identify the field and its required format/constraints;
+missing/null fields are handled the same way. Unknown properties receive an
+unsupported-field detail. Malformed bodies without an identifiable field retain
+a JSON-level detail. Status 400 and existing stable error codes remain unchanged,
+and internal exception messages are not exposed. Updated the implementation
+plan; no repository tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Final spotless:apply, validate, and verify passed; all 73 existing tests passed
+  with no failures, errors, or skips.
+- All 49 temporary in-memory Spring MVC checks passed with additional assertions
+  that invalid count and deckId responses identify the relevant field. Initial
+  checks exposed integer overflow's Jackson InputCoercionException; included its
+  structured path in mapping before final verification.
+- git diff --check passed. No server was started, commit, or push performed.
+
+## Step 89 — Simplify validation with explicit controller validators
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested UUIDValidator and CardCountValidator called directly in
+controller bodies, with a custom exception mapped centrally. Codex added both
+Spring components and RequestValidationException. GameController validates
+raw path IDs and body deckId/count values before calling application services.
+Validators return a parsed UUID or positive int and throw the custom exception
+with a specific public detail for invalid input. The centralized handler maps
+it to 400 VALIDATION_FAILED.
+
+AddDeckRequest and DealCardsRequest retain raw JSON values to allow direct type
+checks and specific errors for strings, numbers, fractions, missing/null fields,
+and integer overflow. Names continue to use standard Spring Bean Validation
+with explicit constraint messages. Removed the custom UUID deserializer and
+path binding advice, integer coercion configuration, and Jackson exception-path
+inspection. Kept small Jackson settings for invalid JSON/unknown properties
+and non-string names. Updated implementation documentation and path validation
+example codes. Preserved the developer's README changes and staged deletion of
+the manual API testing guide. No tests were added or changed.
+
+### Actual verification
+
+- Used sdk env to select Java 26.0.2-tem and Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- All 49 temporary in-memory Spring MVC checks passed, including specific count
+  and deckId details and malformed UUIDs in both path positions.
+- OpenAPI JSON parsing and git diff --check passed. No server was started, commit,
+  or push performed.
+
+## Step 90 — Use BAD_REQUEST for all invalid request responses
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested BAD_REQUEST instead of VALIDATION_FAILED, with details
+explaining the invalid input. Codex unified all existing 400 mappings to
+BAD_REQUEST, including custom validation, Spring constraint failures, unreadable
+bodies, and parameter conversion failures. Field-specific details and HTTP
+statuses remain unchanged. Updated OpenAPI 400 example codes and the plan.
+Preserved existing developer edits; no tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- Parsed OpenAPI JSON and checked all 400 example codes are BAD_REQUEST.
+- git diff --check passed. No commit or push performed.
+
+## Step 91 — Restore Spring UUID path conversion
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested retaining @PathVariable UUID arguments instead of
+String arguments. Codex restored UUID gameId/playerId on all controller paths
+and removed their explicit UUIDValidator calls. Spring handles path conversion;
+MethodArgumentTypeMismatchException remains mapped centrally to 400 BAD_REQUEST
+with a parameter-specific detail. UUIDValidator remains for body deckId, and
+CardCountValidator remains for body count. Path UUID format acceptance now
+follows Spring's native converter. Updated the implementation plan and preserved
+existing developer changes. No tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- All 49 temporary in-memory Spring MVC checks passed. Path cases now check
+  malformed UUID strings rather than rejecting forms accepted by native Spring
+  conversion; body validators retain their strict format checks.
+- git diff --check passed. No commit or push performed.
+
+## Step 92 — Consolidate success response mapping
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested a single ResponseMapper for successful responses while
+keeping ErrorResponseMapper separate. Codex consolidated all nine success mapper
+classes and updated both controllers to inject the shared component. Mapping
+methods use descriptive to...Response names because Game and Player inputs map
+to multiple response shapes, and generic list overloads would conflict. Nested
+suit mapping now stays in the shared mapper without another injected component.
+Response payloads, routes, validation, and ErrorResponseMapper remain unchanged.
+Updated the implementation plan and preserved existing developer changes.
+No tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- Initial verify caught a leftover constructor from a removed mapper; corrected
+  it and reran all required checks.
+- Final spotless:apply, validate, and verify passed; all 73 existing tests passed
+  with no failures, errors, or skips.
+- Reviewed controller calls and confirmed no references to removed mapper classes
+  remain in source. git diff --check passed. No commit or push performed.
+
+## Step 93 — Group game response mapping
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested grouping methods that take a Game parameter in
+GameResponseMapper. Codex moved game creation, deal-result mapping, and both
+undealt-card count responses into that component, along with their nested suit
+mapping helper. GameController injects GameResponseMapper for those operations
+and ResponseMapper for player/card responses. DeckController continues to use
+ResponseMapper, and ErrorResponseMapper remains separate. Response shapes and
+validation behavior are preserved. Updated the implementation plan and preserved
+existing developer changes. No tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- git diff --check passed. No commit or push performed.
+
+## Step 94 — Map ordered rank counts without explicit rank lookups
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer asked to remove the explicit king-through-ace lookups since domain
+counts already have the required order. Codex changed GetUndealtSuitCardsResponse
+to hold an ordered string-keyed map serialized directly with JsonValue. The mapper
+iterates the domain's existing ordered entries and translates rank labels to the
+contract keys: lowercase face names and numeric strings. The DTO copies the map
+into an immutable LinkedHashMap to preserve order. The JSON remains the same flat
+13-key object; there is no counts wrapper or response-contract change. No tests
+were added or changed, and existing developer edits were preserved.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- A temporary serialization check outside the repository verified exact JSON
+  keys, ordering, shape, and counts for zero, one, and two decks.
+- git diff --check passed. No commit or push performed.
+
+## Step 95 — Let Rank own its label
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested putting rank-label logic directly in Rank. Codex added
+an explicit label to each enum constant and getLabel(). ResponseMapper uses that
+label for player cards, removing its rank switch. GameResponseMapper uses the
+same label lowercased for undealt-count keys, removing its numeric/face branch.
+Numeric values and enum order remain unchanged; domain classes retain no transport
+annotations. Existing developer changes were preserved, and no tests were added
+or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- Temporary serialization verification passed for unchanged rank count JSON
+  shape, keys, order, and values with zero, one, and two decks.
+- git diff --check passed. No commit or push performed.
+
+## Step 96 — Store lowercase rank labels
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested removing lowercase conversion in the mapper because
+labels should already be lowercase. Codex stored ace/jack/queen/king as lowercase
+Rank labels and changed GameResponseMapper to use getLabel directly. Numeric
+labels remain unchanged. Player-card responses also use these lowercase labels;
+updated the OpenAPI rank enum and examples accordingly. Preserved existing
+developer changes and added no tests.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- OpenAPI JSON parsing and git diff --check passed. No commit or push performed.
+
+## Step 97 — Group response mapping by controller
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving all remaining GameController response mapping
+into GameResponseMapper and renaming the remaining ResponseMapper to
+DeckResponseMapper. Codex moved player creation, player-card lists, and player
+hand-value mapping with their helpers into GameResponseMapper. GameController
+now injects only that success mapper. DeckResponseMapper contains deck creation
+mapping, and DeckController injects it. ErrorResponseMapper remains separate.
+Updated the implementation plan and preserved existing developer edits. No
+response behavior changed and no tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- No old ResponseMapper references remain in source; git diff --check passed.
+- No commit or push performed.
+
+## Step 103 — Publish request validation
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested committing, pushing, and opening the request validation
+PR. Codex prepared the existing changes, applied required Java formatting, and
+ran repository checks. The changes include Jakarta request constraints, UUID
+body validation, strict JSON binding, controller-specific response mappers,
+enum labels, and the developer's exception and documentation simplifications.
+No tests were added. Existing behavior was preserved, including the outstanding
+Spring error mapping issue: its handlers currently select the generic mapper
+overload and return 500 instead of 400.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply and validate passed.
+- verify ran 73 tests: three failures, no errors or skips. Two DeckTest
+  assertions and one InMemoryPlayerRepositoryTest assertion expect previous
+  exception messages.
+- These limitations are recorded in the PR for review.
+
+## Step 98 — Let Suit own its label
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested labels on Suit instead of converting enum names to
+lowercase in the mapper. Codex added lowercase labels and getLabel() to Suit,
+and changed GameResponseMapper to call card.suit().getLabel(). Removed the
+unused Locale import. Enum names/order and API response values remain unchanged.
+Preserved existing developer changes; no tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- git diff --check passed. No commit or push performed.
+
+## Step 99 — Iterate ordered suits for undealt card responses
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested iterating suit entries instead of retrieving each suit
+explicitly in toGetUndealtCardsResponse. Codex changed the response record to an
+ordered map serialized directly with JsonValue and iterated the domain count
+map using Suit.getLabel() keys. Nested rank mapping remains unchanged. The
+response takes an immutable copy preserving suit order and retains the existing
+four-suit JSON shape. Preserved existing developer changes; no tests were added
+or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- Temporary serialization verification passed for exact suit/rank keys, order,
+  JSON shape, and counts with zero, one, and two decks.
+- git diff --check passed. No commit or push performed.
+
+## Step 100 — Revert the suit-map response change
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested reverting the last change. Codex restored the four
+explicit suit components in GetUndealtCardsResponse and the explicit suit lookups
+in GameResponseMapper, reversing step 99. Earlier rank-map mapping, Suit/Rank
+labels, mapper organization, and validation changes remain intact. Preserved
+existing developer edits; no tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem with sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- git diff --check passed. No commit or push performed.
+
+## Step 101 — Use Jakarta constraints for deal counts
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested replacing the custom count validator with Jakarta
+@NotNull, @Min(1), and @Max(Integer.MAX_VALUE) on Integer count.
+Codex updated DealCardsRequest, enabled @Valid on the deal controller argument,
+and removed CardCountValidator and its injection/call. Explicit constraint
+messages retain count-specific 400 BAD_REQUEST responses. Jackson integer
+binding rejects fractional, string, boolean, and overflow input; the error mapper
+uses structured target types to provide the count detail for binding failures,
+without inspecting property paths or exposing internal exception messages.
+Updated the implementation plan and preserved other developer changes. No tests
+were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply, validate, and verify passed; all 73 existing tests passed with
+  no failures, errors, or skips.
+- All 13 temporary in-memory Spring MVC count checks passed: missing/null,
+  zero/negative, fractions, numeric strings, booleans, overflow, arrays, objects,
+  and valid minimum/maximum counts. Invalid counts identify the count field and
+  use BAD_REQUEST.
+- git diff --check passed. No commit or push performed.
+
+## Step 102 — Let InvalidIdentifierException build its message
+
+Date: September 30, 2026
+
+### Goal, decisions, and AI contribution
+
+The developer requested moving UUID message construction into
+InvalidIdentifierException. Codex changed its constructor to accept the field
+name and build the public message there. UUIDValidator now throws
+new InvalidIdentifierException(field). Existing centralized mapping remains
+unchanged. Preserved the developer's concurrent exception renames and other
+edits. No tests were added or changed.
+
+### Actual verification
+
+- Selected Java 26.0.2-tem using sdk env and used Maven Wrapper.
+- spotless:apply and validate passed; git diff --check passed.
+- verify ran all 73 tests and failed with one assertion failure in
+  InMemoryPlayerRepositoryTest: its existing expectation still uses the old
+  player-not-part-of-game message while PlayerNotFoundInGameException now uses
+  a different message. This is unrelated to identifier message construction;
+  preserved the developer's exception/test changes rather than modifying them.
+- No commit or push performed.

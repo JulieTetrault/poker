@@ -1,7 +1,7 @@
 package com.example.poker.persistence.repository;
 
 import com.example.poker.domain.exception.NotFoundException;
-import com.example.poker.domain.exception.PlayerNotPartOfGameException;
+import com.example.poker.domain.exception.PlayerNotFoundInGameException;
 import com.example.poker.domain.model.Player;
 import com.example.poker.domain.repository.PlayerRepository;
 import com.example.poker.persistence.entity.GameEntity;
@@ -52,7 +52,7 @@ public class InMemoryPlayerRepository implements PlayerRepository {
     public Player getByIdAndGameId(UUID id, UUID gameId) {
         PlayerEntity player = this.getEntityById(id);
         if (!player.getGame().getId().equals(gameId)) {
-            throw new PlayerNotPartOfGameException(id, gameId);
+            throw new PlayerNotFoundInGameException(id, gameId);
         }
         return playerEntityMapper.fromEntity(player);
     }
