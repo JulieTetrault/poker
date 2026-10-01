@@ -11,13 +11,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ErrorResponseMapper {
     public ErrorResponse toResponse(NotFoundException exception) {
-        return new ErrorResponse(
-                exception.getMessage(), HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.name());
+        return new ErrorResponse(exception.getMessage(), HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.name());
     }
 
     public ErrorResponse toResponse(PlayerNotFoundInGameException exception) {
-        return new ErrorResponse(
-                exception.getMessage(), HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.name());
+        return new ErrorResponse(exception.getMessage(), HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.name());
     }
 
     public ErrorResponse toResponse(DeckAlreadyAttachedException exception) {
@@ -28,10 +26,7 @@ public class ErrorResponseMapper {
     }
 
     public ErrorResponse toResponse(InvalidIdentifierException exception) {
-        return new ErrorResponse(
-                exception.getMessage(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.name());
+        return new ErrorResponse(exception.getMessage(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.name());
     }
 
     public ErrorResponse toResponse(Exception exception) {

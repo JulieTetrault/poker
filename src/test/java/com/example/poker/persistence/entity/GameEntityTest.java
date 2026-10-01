@@ -22,17 +22,15 @@ class GameEntityTest extends BaseEntityTest {
     void givenGameEntity__whenPersistingAndRetrieving__thenReturnGameEntity() {
         persistEntity(this.gameEntity);
 
-        withEntityManager(
-                entityManager -> {
-                    GameEntity gameEntity =
-                            entityManager.find(GameEntity.class, this.gameEntity.getId());
+        withEntityManager(entityManager -> {
+            GameEntity gameEntity = entityManager.find(GameEntity.class, this.gameEntity.getId());
 
-                    assertThat(gameEntity).isInstanceOf(GameEntity.class);
-                    assertThat(gameEntity.getId()).isEqualTo(this.gameEntity.getId());
-                    assertThat(gameEntity.getName()).isEqualTo(this.gameEntity.getName());
-                    assertThat(gameEntity.getPlayers())
-                            .extracting(PlayerEntity::getId)
-                            .containsExactly(this.playerEntity.getId());
-                });
+            assertThat(gameEntity).isInstanceOf(GameEntity.class);
+            assertThat(gameEntity.getId()).isEqualTo(this.gameEntity.getId());
+            assertThat(gameEntity.getName()).isEqualTo(this.gameEntity.getName());
+            assertThat(gameEntity.getPlayers())
+                    .extracting(PlayerEntity::getId)
+                    .containsExactly(this.playerEntity.getId());
+        });
     }
 }

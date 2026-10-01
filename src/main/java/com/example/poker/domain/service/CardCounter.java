@@ -42,14 +42,14 @@ public final class CardCounter {
 
     public Map<Suit, Integer> getSuitCardsCount() {
         return Arrays.stream(Suit.values())
-                .collect(
-                        Collectors.toUnmodifiableMap(
-                                Function.identity(), this::getCardsCountBySuit));
+                .collect(Collectors.toUnmodifiableMap(Function.identity(), this::getCardsCountBySuit));
     }
 
     private int getCardsCountBySuit(Suit suit) {
         EnumMap<Rank, Integer> ranks = cardCounts.get(suit);
-        return ranks == null ? 0 : ranks.values().stream().mapToInt(Integer::intValue).sum();
+        return ranks == null
+                ? 0
+                : ranks.values().stream().mapToInt(Integer::intValue).sum();
     }
 
     private int getCardsCountBySuitAndRank(Suit suit, Rank rank) {

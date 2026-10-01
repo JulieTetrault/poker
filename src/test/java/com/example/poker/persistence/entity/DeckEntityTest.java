@@ -16,14 +16,12 @@ class DeckEntityTest extends BaseEntityTest {
         persistEntity(SOME_GAME_ENTITY);
         persistEntity(SOME_DECK_ENTITY);
 
-        withEntityManager(
-                entityManager -> {
-                    DeckEntity deckEntity =
-                            entityManager.find(DeckEntity.class, SOME_DECK_ENTITY.getId());
+        withEntityManager(entityManager -> {
+            DeckEntity deckEntity = entityManager.find(DeckEntity.class, SOME_DECK_ENTITY.getId());
 
-                    assertThat(deckEntity).isInstanceOf(DeckEntity.class);
-                    assertThat(deckEntity.getId()).isEqualTo(SOME_DECK_ENTITY.getId());
-                    assertThat(deckEntity.getGame().getId()).isEqualTo(SOME_GAME_ENTITY.getId());
-                });
+            assertThat(deckEntity).isInstanceOf(DeckEntity.class);
+            assertThat(deckEntity.getId()).isEqualTo(SOME_DECK_ENTITY.getId());
+            assertThat(deckEntity.getGame().getId()).isEqualTo(SOME_GAME_ENTITY.getId());
+        });
     }
 }

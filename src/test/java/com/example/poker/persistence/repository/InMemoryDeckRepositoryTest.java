@@ -33,20 +33,23 @@ class InMemoryDeckRepositoryTest {
     private static final DeckEntity SOME_DECK_ENTITY = new DeckEntityFixture().build();
     private static final DeckEntity SOME_PERSISTED_DECK_ENTITY = new DeckEntityFixture().build();
 
-    @Mock private JPADeckRepository deckRepository;
+    @Mock
+    private JPADeckRepository deckRepository;
 
-    @Mock private DeckEntityMapper deckEntityMapper;
+    @Mock
+    private DeckEntityMapper deckEntityMapper;
 
-    @Mock private EntityManager entityManager;
+    @Mock
+    private EntityManager entityManager;
 
-    @InjectMocks private InMemoryDeckRepository inMemoryDeckRepository;
+    @InjectMocks
+    private InMemoryDeckRepository inMemoryDeckRepository;
 
     @Test
     void whenCreating__thenReturnPersistedDeck() {
         given(deckEntityMapper.toEntity(SOME_DECK)).willReturn(SOME_DECK_ENTITY);
         given(deckRepository.save(SOME_DECK_ENTITY)).willReturn(SOME_PERSISTED_DECK_ENTITY);
-        given(deckEntityMapper.fromEntity(SOME_PERSISTED_DECK_ENTITY))
-                .willReturn(SOME_PERSISTED_DECK);
+        given(deckEntityMapper.fromEntity(SOME_PERSISTED_DECK_ENTITY)).willReturn(SOME_PERSISTED_DECK);
 
         Deck deck = inMemoryDeckRepository.create(SOME_DECK);
 
@@ -55,17 +58,14 @@ class InMemoryDeckRepositoryTest {
     }
 
     @Test
-    void
-            givenExistingDeckWithGameReference__whenUpdating__thenReturnPersistedDeckWithGameReference() {
-        given(deckRepository.findById(SOME_DECK_ATTACHED_TO_GAME.getId()))
-                .willReturn(Optional.of(SOME_DECK_ENTITY));
+    void givenExistingDeckWithGameReference__whenUpdating__thenReturnPersistedDeckWithGameReference() {
+        given(deckRepository.findById(SOME_DECK_ATTACHED_TO_GAME.getId())).willReturn(Optional.of(SOME_DECK_ENTITY));
         given(entityManager.getReference(GameEntity.class, SOME_GAME_ENTITY.getId()))
                 .willReturn(SOME_GAME_ENTITY);
         given(deckEntityMapper.toEntity(SOME_DECK_ATTACHED_TO_GAME, SOME_GAME_ENTITY))
                 .willReturn(SOME_DECK_ENTITY);
         given(deckRepository.save(SOME_DECK_ENTITY)).willReturn(SOME_PERSISTED_DECK_ENTITY);
-        given(deckEntityMapper.fromEntity(SOME_PERSISTED_DECK_ENTITY))
-                .willReturn(SOME_PERSISTED_DECK);
+        given(deckEntityMapper.fromEntity(SOME_PERSISTED_DECK_ENTITY)).willReturn(SOME_PERSISTED_DECK);
 
         Deck deck = inMemoryDeckRepository.update(SOME_DECK_ATTACHED_TO_GAME);
 
@@ -74,13 +74,11 @@ class InMemoryDeckRepositoryTest {
     }
 
     @Test
-    void
-            givenExistingDeckWithoutGameReference__whenUpdating__thenReturnPersistedDeckWithoutGameReference() {
+    void givenExistingDeckWithoutGameReference__whenUpdating__thenReturnPersistedDeckWithoutGameReference() {
         given(deckRepository.findById(SOME_DECK.getId())).willReturn(Optional.of(SOME_DECK_ENTITY));
         given(deckEntityMapper.toEntity(SOME_DECK, null)).willReturn(SOME_DECK_ENTITY);
         given(deckRepository.save(SOME_DECK_ENTITY)).willReturn(SOME_PERSISTED_DECK_ENTITY);
-        given(deckEntityMapper.fromEntity(SOME_PERSISTED_DECK_ENTITY))
-                .willReturn(SOME_PERSISTED_DECK);
+        given(deckEntityMapper.fromEntity(SOME_PERSISTED_DECK_ENTITY)).willReturn(SOME_PERSISTED_DECK);
 
         Deck deck = inMemoryDeckRepository.update(SOME_DECK);
 
@@ -95,9 +93,7 @@ class InMemoryDeckRepositoryTest {
 
         var exception = assertThatThrownBy(() -> inMemoryDeckRepository.update(SOME_DECK));
 
-        exception
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("Deck not found: " + SOME_DECK.getId());
+        exception.isInstanceOf(NotFoundException.class).hasMessage("Deck not found: " + SOME_DECK.getId());
         verify(deckRepository).findById(SOME_DECK.getId());
         verifyNoMoreInteractions(deckRepository);
         verifyNoInteractions(deckEntityMapper, entityManager);

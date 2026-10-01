@@ -16,12 +16,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DeckFactoryTest {
-    private static final UUID SOME_DECK_ID =
-            UUID.fromString("715ba85d-f8a7-4f90-ae14-d974158f2fde");
+    private static final UUID SOME_DECK_ID = UUID.fromString("715ba85d-f8a7-4f90-ae14-d974158f2fde");
 
-    @Mock private IdGenerator idGenerator;
+    @Mock
+    private IdGenerator idGenerator;
 
-    @InjectMocks private DeckFactory deckFactory;
+    @InjectMocks
+    private DeckFactory deckFactory;
 
     @BeforeEach
     void setUp() {

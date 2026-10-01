@@ -123,7 +123,7 @@ classDiagram
 
 ## Domain Notes
 
-`Shoe` stores the game's state. It three domain services: `CardDealer` removes cards,
+`Shoe` stores the game's state. It has three domain services: `CardDealer` removes cards,
 `CardCounter` tracks suit/rank counts, and `CardShuffler` changes card order.
 This separates responsibilities and makes each behavior independently testable.
 

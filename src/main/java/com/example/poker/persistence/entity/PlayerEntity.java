@@ -17,7 +17,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "players")
 public class PlayerEntity {
-    @Id private UUID id;
+    @Id
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_id", nullable = false)

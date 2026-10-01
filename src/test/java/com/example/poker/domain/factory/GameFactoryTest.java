@@ -19,12 +19,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GameFactoryTest {
     private static final String SOME_GAME_NAME = "Game";
-    private static final UUID SOME_GAME_ID =
-            UUID.fromString("715ba85d-f8a7-4f90-ae14-d974158f2fde");
+    private static final UUID SOME_GAME_ID = UUID.fromString("715ba85d-f8a7-4f90-ae14-d974158f2fde");
 
-    @Mock private IdGenerator idGenerator;
+    @Mock
+    private IdGenerator idGenerator;
 
-    @InjectMocks private GameFactory gameFactory;
+    @InjectMocks
+    private GameFactory gameFactory;
 
     @BeforeEach
     void setUp() {

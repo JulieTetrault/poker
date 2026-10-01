@@ -12,32 +12,20 @@ import tools.jackson.databind.type.LogicalType;
 public class RequestValidationConfiguration {
     @Bean
     public JsonMapperBuilderCustomizer strictRequestJson() {
-        return builder ->
-                builder.enable(
-                                DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-                                DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-                        .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
-                        .withCoercionConfig(
-                                LogicalType.Textual,
-                                config -> {
-                                    config.setCoercion(
-                                            CoercionInputShape.Integer, CoercionAction.Fail);
-                                    config.setCoercion(
-                                            CoercionInputShape.Float, CoercionAction.Fail);
-                                    config.setCoercion(
-                                            CoercionInputShape.Boolean, CoercionAction.Fail);
-                                })
-                        .withCoercionConfig(
-                                LogicalType.Integer,
-                                config -> {
-                                    config.setCoercion(
-                                            CoercionInputShape.String, CoercionAction.Fail);
-                                    config.setCoercion(
-                                            CoercionInputShape.EmptyString, CoercionAction.Fail);
-                                    config.setCoercion(
-                                            CoercionInputShape.Float, CoercionAction.Fail);
-                                    config.setCoercion(
-                                            CoercionInputShape.Boolean, CoercionAction.Fail);
-                                });
+        return builder -> builder.enable(
+                        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                        DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+                .withCoercionConfig(LogicalType.Textual, config -> {
+                    config.setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
+                    config.setCoercion(CoercionInputShape.Float, CoercionAction.Fail);
+                    config.setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
+                })
+                .withCoercionConfig(LogicalType.Integer, config -> {
+                    config.setCoercion(CoercionInputShape.String, CoercionAction.Fail);
+                    config.setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail);
+                    config.setCoercion(CoercionInputShape.Float, CoercionAction.Fail);
+                    config.setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
+                });
     }
 }

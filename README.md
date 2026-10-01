@@ -61,7 +61,8 @@ Swagger UI loads its assets from a CDN, so internet access is required.
 
 ## Run the linter and formatter
 
-Spotless applies google-java-format; Checkstyle checks Java conventions.
+Spotless applies Palantir Java Format with a 120-character line width and
+four-space indentation; Checkstyle checks Java conventions.
 
 ```sh
 ./mvnw spotless:apply  # Apply formatting

@@ -16,7 +16,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "games")
 public class GameEntity {
-    @Id private UUID id;
+    @Id
+    private UUID id;
 
     @Column(nullable = false, length = 100)
     private String name;
