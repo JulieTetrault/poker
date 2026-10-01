@@ -16,6 +16,8 @@ public final class DeckEntityMapper {
     }
 
     public Deck fromEntity(DeckEntity entity) {
-        return new Deck(entity.getId(), entity.getGame() == null ? null : entity.getGame().getId());
+        return new Deck(
+                entity.getId(),
+                entity.getGame() == null ? null : entity.getGame().getId());
     }
 }

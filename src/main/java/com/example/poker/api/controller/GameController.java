@@ -35,10 +35,7 @@ public class GameController {
     private final GameResponseMapper gameResponseMapper;
     private final UUIDValidator uuidValidator;
 
-    public GameController(
-            GameService gameService,
-            UUIDValidator uuidValidator,
-            GameResponseMapper gameResponseMapper) {
+    public GameController(GameService gameService, UUIDValidator uuidValidator, GameResponseMapper gameResponseMapper) {
         this.gameService = gameService;
         this.uuidValidator = uuidValidator;
         this.gameResponseMapper = gameResponseMapper;
@@ -81,8 +78,7 @@ public class GameController {
 
     @PostMapping("/{gameId}/players")
     @ResponseStatus(HttpStatus.CREATED)
-    public AddPlayerResponse addPlayer(
-            @PathVariable UUID gameId, @Valid @RequestBody AddPlayerRequest request) {
+    public AddPlayerResponse addPlayer(@PathVariable UUID gameId, @Valid @RequestBody AddPlayerRequest request) {
         return gameResponseMapper.toAddPlayerResponse(
                 gameService.addPlayer(gameId, request.name().trim()));
     }
@@ -99,17 +95,13 @@ public class GameController {
     }
 
     @GetMapping("/{gameId}/players/{playerId}/cards")
-    public List<GetPlayerCardResponse> getHand(
-            @PathVariable UUID gameId, @PathVariable UUID playerId) {
-        return gameResponseMapper.toGetPlayerCardsResponse(
-                gameService.getPlayerCards(gameId, playerId));
+    public List<GetPlayerCardResponse> getHand(@PathVariable UUID gameId, @PathVariable UUID playerId) {
+        return gameResponseMapper.toGetPlayerCardsResponse(gameService.getPlayerCards(gameId, playerId));
     }
 
     @PostMapping("/{gameId}/players/{playerId}/cards/deal")
     public DealCardsResponse dealCards(
-            @PathVariable UUID gameId,
-            @PathVariable UUID playerId,
-            @Valid @RequestBody DealCardsRequest request) {
+            @PathVariable UUID gameId, @PathVariable UUID playerId, @Valid @RequestBody DealCardsRequest request) {
         List<Card> dealtCards = gameService.dealCards(request.count(), gameId, playerId);
         return gameResponseMapper.toDealCardsResponse(dealtCards, gameService.getGame(gameId));
     }

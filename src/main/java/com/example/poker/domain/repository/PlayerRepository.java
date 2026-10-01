@@ -5,10 +5,4 @@ import java.util.UUID;
 
 public interface PlayerRepository {
     Player getByIdAndGameId(UUID id, UUID gameId);
-
-    Player create(Player player);
-
-    Player update(Player player);
-
-    void deleteById(UUID id);
 }

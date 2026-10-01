@@ -30,9 +30,11 @@ class PlayerEntityMapperTest {
     private static final PlayerEntity SOME_PLAYER_ENTITY =
             new PlayerEntityFixture().withCards(List.of(SOME_CARD_ENTITY)).build();
 
-    @Mock private CardEntityMapper cardEntityMapper;
+    @Mock
+    private CardEntityMapper cardEntityMapper;
 
-    @InjectMocks private PlayerEntityMapper playerEntityMapper;
+    @InjectMocks
+    private PlayerEntityMapper playerEntityMapper;
 
     @Test
     void givenPlayer__whenMappingToEntity__thenReturnPlayerEntity() {

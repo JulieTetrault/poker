@@ -26,7 +26,8 @@ public class GameResponseMapper {
     }
 
     public DealCardsResponse toDealCardsResponse(List<Card> dealtCards, Game game) {
-        return new DealCardsResponse(dealtCards.size(), game.getShoe().getCards().size());
+        return new DealCardsResponse(
+                dealtCards.size(), game.getShoe().getCards().size());
     }
 
     public GetUndealtCardsResponse toGetUndealtCardsResponse(Game game) {
@@ -41,10 +42,7 @@ public class GameResponseMapper {
     public GetUndealtSuitCardsCountResponse toGetUndealtSuitCardsCountResponse(Game game) {
         Map<Suit, Integer> counts = game.getShoe().getUndealtSuitCardsCount();
         return new GetUndealtSuitCardsCountResponse(
-                counts.get(Suit.HEARTS),
-                counts.get(Suit.SPADES),
-                counts.get(Suit.CLUBS),
-                counts.get(Suit.DIAMONDS));
+                counts.get(Suit.HEARTS), counts.get(Suit.SPADES), counts.get(Suit.CLUBS), counts.get(Suit.DIAMONDS));
     }
 
     public AddPlayerResponse toAddPlayerResponse(Player player) {
@@ -70,7 +68,6 @@ public class GameResponseMapper {
     }
 
     private GetPlayerHandValueResponse toGetPlayerHandValueResponse(Player player) {
-        return new GetPlayerHandValueResponse(
-                player.getId(), player.getName(), player.getHandValue());
+        return new GetPlayerHandValueResponse(player.getId(), player.getName(), player.getHandValue());
     }
 }

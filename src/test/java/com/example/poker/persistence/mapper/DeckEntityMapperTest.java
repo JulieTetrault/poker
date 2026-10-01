@@ -22,11 +22,8 @@ class DeckEntityMapperTest {
 
     @Test
     void givenDeckAttachedToGame__whenMappingToEntity__thenReturnDeckEntityAttachedToGame() {
-        // GIVEN
-        // WHEN
         DeckEntity deckEntity = deckEntityMapper.toEntity(SOME_DECK, SOME_GAME_ENTITY);
 
-        // THEN
         assertThat(deckEntity).isInstanceOf(DeckEntity.class);
         assertThat(deckEntity.getId()).isEqualTo(SOME_DECK.getId());
         assertThat(deckEntity.getGame()).isEqualTo(SOME_GAME_ENTITY);
@@ -34,11 +31,8 @@ class DeckEntityMapperTest {
 
     @Test
     void givenDeckEntityAttachedToGame__whenMappingFromEntity__thenReturnDeckAttachedToGame() {
-        // GIVEN
-        // WHEN
         Deck deck = deckEntityMapper.fromEntity(SOME_DECK_ENTITY_ATTACHED_TO_GAME);
 
-        // THEN
         assertThat(deck).isInstanceOf(Deck.class);
         assertThat(deck.getId()).isEqualTo(SOME_DECK_ENTITY_ATTACHED_TO_GAME.getId());
         assertThat(deck.getGameId()).isEqualTo(SOME_GAME_ENTITY.getId());
@@ -46,24 +40,17 @@ class DeckEntityMapperTest {
 
     @Test
     void givenDeckNotAttachedToGame__whenMappingToEntity__thenReturnDeckEntityNotAttachedToGame() {
-        // GIVEN
-        // WHEN
         DeckEntity deckEntity = deckEntityMapper.toEntity(SOME_DECK);
 
-        // THEN
         assertThat(deckEntity).isInstanceOf(DeckEntity.class);
         assertThat(deckEntity.getId()).isEqualTo(SOME_DECK.getId());
         assertThat(deckEntity.getGame()).isNull();
     }
 
     @Test
-    void
-            givenDeckEntityNotAttachedToGame__whenMappingFromEntity__thenReturnDeckNotAttachedToGame() {
-        // GIVEN
-        // WHEN
+    void givenDeckEntityNotAttachedToGame__whenMappingFromEntity__thenReturnDeckNotAttachedToGame() {
         Deck deck = deckEntityMapper.fromEntity(SOME_DECK_ENTITY);
 
-        // THEN
         assertThat(deck).isInstanceOf(Deck.class);
         assertThat(deck.getId()).isEqualTo(SOME_DECK_ENTITY.getId());
         assertThat(deck.getGameId()).isNull();

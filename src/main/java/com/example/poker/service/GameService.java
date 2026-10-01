@@ -77,10 +77,7 @@ public class GameService {
     public List<Player> getPlayers(UUID gameId) {
         Game game = gameRepository.getById(gameId);
         return game.getPlayers().stream()
-                .sorted(
-                        Comparator.comparingInt(Player::getHandValue)
-                                .reversed()
-                                .thenComparing(Player::getName))
+                .sorted(Comparator.comparingInt(Player::getHandValue).reversed().thenComparing(Player::getName))
                 .toList();
     }
 

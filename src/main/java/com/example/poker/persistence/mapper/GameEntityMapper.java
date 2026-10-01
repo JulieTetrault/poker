@@ -13,20 +13,18 @@ public final class GameEntityMapper {
     private final CardEntityMapper cardEntityMapper;
     private final PlayerEntityMapper playerEntityMapper;
 
-    public GameEntityMapper(
-            PlayerEntityMapper playerEntityMapper, CardEntityMapper cardEntityMapper) {
+    public GameEntityMapper(PlayerEntityMapper playerEntityMapper, CardEntityMapper cardEntityMapper) {
         this.cardEntityMapper = cardEntityMapper;
         this.playerEntityMapper = playerEntityMapper;
     }
 
     public GameEntity toEntity(Game game) {
-        GameEntity gameEntity =
-                new GameEntity(
-                        game.getId(),
-                        game.getName(),
-                        game.getShoe().getCards().stream()
-                                .map(cardEntityMapper::toEntity)
-                                .toList());
+        GameEntity gameEntity = new GameEntity(
+                game.getId(),
+                game.getName(),
+                game.getShoe().getCards().stream()
+                        .map(cardEntityMapper::toEntity)
+                        .toList());
 
         game.getPlayers().stream()
                 .map(player -> playerEntityMapper.toEntity(player, gameEntity))
@@ -39,10 +37,9 @@ public final class GameEntityMapper {
         return new Game(
                 entity.getId(),
                 entity.getName(),
-                new Shoe(
-                        entity.getUndealtCards().stream()
-                                .map(cardEntityMapper::fromEntity)
-                                .toList()),
+                new Shoe(entity.getUndealtCards().stream()
+                        .map(cardEntityMapper::fromEntity)
+                        .toList()),
                 entity.getPlayers().stream()
                         .map(playerEntityMapper::fromEntity)
                         .collect(Collectors.toMap(Player::getId, Function.identity())));

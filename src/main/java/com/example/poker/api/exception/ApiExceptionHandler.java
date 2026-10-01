@@ -27,20 +27,17 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(PlayerNotFoundInGameException.class)
-    public ResponseEntity<ErrorResponse> handlePlayerNotFoundInGame(
-            PlayerNotFoundInGameException exception) {
+    public ResponseEntity<ErrorResponse> handlePlayerNotFoundInGame(PlayerNotFoundInGameException exception) {
         return toResponseEntity(errorResponseMapper.toResponse(exception));
     }
 
     @ExceptionHandler(DeckAlreadyAttachedException.class)
-    public ResponseEntity<ErrorResponse> handleDeckAlreadyAttached(
-            DeckAlreadyAttachedException exception) {
+    public ResponseEntity<ErrorResponse> handleDeckAlreadyAttached(DeckAlreadyAttachedException exception) {
         return toResponseEntity(errorResponseMapper.toResponse(exception));
     }
 
     @ExceptionHandler(InvalidIdentifierException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidIdentifier(
-            InvalidIdentifierException exception) {
+    public ResponseEntity<ErrorResponse> handleInvalidIdentifier(InvalidIdentifierException exception) {
         return toResponseEntity(errorResponseMapper.toResponse(exception));
     }
 

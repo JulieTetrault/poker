@@ -5,5 +5,5 @@ import jakarta.validation.constraints.Positive;
 
 public record DealCardsRequest(
         @NotNull(message = "Field 'count' is required.")
-                @Positive(message = "Field 'count' must be a positive integer.")
-                Integer count) {}
+        @Positive(message = "Field 'count' must be a positive integer.")
+        Integer count) {}

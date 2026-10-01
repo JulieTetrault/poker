@@ -17,14 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PlayerFactoryTest {
     private static final String SOME_PLAYER_NAME = "Alice";
-    private static final UUID SOME_PLAYER_ID =
-            UUID.fromString("715ba85d-f8a7-4f90-ae14-d974158f2fde");
-    private static final UUID SOME_GAME_ID =
-            UUID.fromString("f2c7be63-ac5c-4777-8a7c-ea97473818f1");
+    private static final UUID SOME_PLAYER_ID = UUID.fromString("715ba85d-f8a7-4f90-ae14-d974158f2fde");
+    private static final UUID SOME_GAME_ID = UUID.fromString("f2c7be63-ac5c-4777-8a7c-ea97473818f1");
 
-    @Mock private IdGenerator idGenerator;
+    @Mock
+    private IdGenerator idGenerator;
 
-    @InjectMocks private PlayerFactory playerFactory;
+    @InjectMocks
+    private PlayerFactory playerFactory;
 
     @BeforeEach
     void setUp() {

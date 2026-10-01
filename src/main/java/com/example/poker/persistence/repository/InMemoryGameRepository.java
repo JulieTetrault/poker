@@ -18,9 +18,7 @@ public class InMemoryGameRepository implements GameRepository {
     private final GameEntityMapper gameEntityMapper;
 
     public InMemoryGameRepository(
-            JPAGameRepository gameRepository,
-            GameEntityMapper gameEntityMapper,
-            JPADeckRepository deckRepository) {
+            JPAGameRepository gameRepository, GameEntityMapper gameEntityMapper, JPADeckRepository deckRepository) {
         this.gameRepository = gameRepository;
         this.deckRepository = deckRepository;
         this.gameEntityMapper = gameEntityMapper;

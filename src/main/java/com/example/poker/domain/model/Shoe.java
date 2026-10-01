@@ -21,11 +21,7 @@ public final class Shoe {
         this(cards, new CardShuffler(), new CardCounter(), new CardDealer());
     }
 
-    public Shoe(
-            List<Card> cards,
-            CardShuffler cardShuffler,
-            CardCounter cardCounter,
-            CardDealer cardDealer) {
+    public Shoe(List<Card> cards, CardShuffler cardShuffler, CardCounter cardCounter, CardDealer cardDealer) {
         this.cards = new ArrayList<>(cards);
         this.cardShuffler = cardShuffler;
         this.cardCounter = cardCounter;

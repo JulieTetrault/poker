@@ -16,16 +16,14 @@ class PlayerEntityTest extends BaseEntityTest {
         persistEntity(SOME_GAME_ENTITY);
         persistEntity(SOME_PLAYER_ENTITY);
 
-        withEntityManager(
-                entityManager -> {
-                    PlayerEntity playerEntity =
-                            entityManager.find(PlayerEntity.class, SOME_PLAYER_ENTITY.getId());
+        withEntityManager(entityManager -> {
+            PlayerEntity playerEntity = entityManager.find(PlayerEntity.class, SOME_PLAYER_ENTITY.getId());
 
-                    assertThat(playerEntity).isInstanceOf(PlayerEntity.class);
-                    assertThat(playerEntity.getId()).isEqualTo(SOME_PLAYER_ENTITY.getId());
-                    assertThat(playerEntity.getGame().getId()).isEqualTo(SOME_GAME_ENTITY.getId());
-                    assertThat(playerEntity.getName()).isEqualTo(SOME_PLAYER_ENTITY.getName());
-                    assertThat(playerEntity.getCards()).isEqualTo(SOME_PLAYER_ENTITY.getCards());
-                });
+            assertThat(playerEntity).isInstanceOf(PlayerEntity.class);
+            assertThat(playerEntity.getId()).isEqualTo(SOME_PLAYER_ENTITY.getId());
+            assertThat(playerEntity.getGame().getId()).isEqualTo(SOME_GAME_ENTITY.getId());
+            assertThat(playerEntity.getName()).isEqualTo(SOME_PLAYER_ENTITY.getName());
+            assertThat(playerEntity.getCards()).isEqualTo(SOME_PLAYER_ENTITY.getCards());
+        });
     }
 }

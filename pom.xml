@@ -17,7 +17,7 @@
 		<java.version>26</java.version>
 		<javafaker.version>1.0.2</javafaker.version>
 		<spotless.version>3.10.3</spotless.version>
-		<google-java-format.version>1.36.1</google-java-format.version>
+		<palantir-java-format.version>2.100.0</palantir-java-format.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<checkstyle.version>14.3.0</checkstyle.version>
 	</properties>
@@ -66,10 +66,10 @@
 				<version>${spotless.version}</version>
 				<configuration>
 					<java>
-						<googleJavaFormat>
-							<version>${google-java-format.version}</version>
-							<style>AOSP</style>
-						</googleJavaFormat>
+						<palantirJavaFormat>
+							<version>${palantir-java-format.version}</version>
+							<style>PALANTIR</style>
+						</palantirJavaFormat>
 					</java>
 				</configuration>
 				<executions>

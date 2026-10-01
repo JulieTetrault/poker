@@ -19,9 +19,7 @@ public class InMemoryDeckRepository implements DeckRepository {
     private final EntityManager entityManager;
 
     public InMemoryDeckRepository(
-            JPADeckRepository deckRepository,
-            DeckEntityMapper deckEntityMapper,
-            EntityManager entityManager) {
+            JPADeckRepository deckRepository, DeckEntityMapper deckEntityMapper, EntityManager entityManager) {
         this.deckRepository = deckRepository;
         this.deckEntityMapper = deckEntityMapper;
         this.entityManager = entityManager;
@@ -49,8 +47,6 @@ public class InMemoryDeckRepository implements DeckRepository {
     }
 
     private GameEntity resolveGameEntity(Deck deck) {
-        return deck.getGameId() != null
-                ? entityManager.getReference(GameEntity.class, deck.getGameId())
-                : null;
+        return deck.getGameId() != null ? entityManager.getReference(GameEntity.class, deck.getGameId()) : null;
     }
 }

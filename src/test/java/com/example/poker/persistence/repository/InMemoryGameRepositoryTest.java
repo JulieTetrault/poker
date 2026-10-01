@@ -27,19 +27,23 @@ class InMemoryGameRepositoryTest {
     private static final GameEntity SOME_GAME_ENTITY = new GameEntityFixture().build();
     private static final GameEntity SOME_PERSISTED_GAME_ENTITY = new GameEntityFixture().build();
 
-    @Mock private JPAGameRepository gameRepository;
-    @Mock private JPADeckRepository deckRepository;
+    @Mock
+    private JPAGameRepository gameRepository;
 
-    @Mock private GameEntityMapper gameEntityMapper;
+    @Mock
+    private JPADeckRepository deckRepository;
 
-    @InjectMocks private InMemoryGameRepository inMemoryGameRepository;
+    @Mock
+    private GameEntityMapper gameEntityMapper;
+
+    @InjectMocks
+    private InMemoryGameRepository inMemoryGameRepository;
 
     @Test
     void whenCreating__thenReturnPersistedGame() {
         given(gameEntityMapper.toEntity(SOME_GAME)).willReturn(SOME_GAME_ENTITY);
         given(gameRepository.save(SOME_GAME_ENTITY)).willReturn(SOME_PERSISTED_GAME_ENTITY);
-        given(gameEntityMapper.fromEntity(SOME_PERSISTED_GAME_ENTITY))
-                .willReturn(SOME_PERSISTED_GAME);
+        given(gameEntityMapper.fromEntity(SOME_PERSISTED_GAME_ENTITY)).willReturn(SOME_PERSISTED_GAME);
 
         Game game = inMemoryGameRepository.create(SOME_GAME);
 
@@ -52,8 +56,7 @@ class InMemoryGameRepositoryTest {
         given(gameRepository.findById(SOME_GAME.getId())).willReturn(Optional.of(SOME_GAME_ENTITY));
         given(gameEntityMapper.toEntity(SOME_GAME)).willReturn(SOME_GAME_ENTITY);
         given(gameRepository.save(SOME_GAME_ENTITY)).willReturn(SOME_PERSISTED_GAME_ENTITY);
-        given(gameEntityMapper.fromEntity(SOME_PERSISTED_GAME_ENTITY))
-                .willReturn(SOME_PERSISTED_GAME);
+        given(gameEntityMapper.fromEntity(SOME_PERSISTED_GAME_ENTITY)).willReturn(SOME_PERSISTED_GAME);
 
         Game game = inMemoryGameRepository.update(SOME_GAME);
 
@@ -67,9 +70,7 @@ class InMemoryGameRepositoryTest {
 
         var exception = assertThatThrownBy(() -> inMemoryGameRepository.update(SOME_GAME));
 
-        exception
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("Game not found: " + SOME_GAME.getId());
+        exception.isInstanceOf(NotFoundException.class).hasMessage("Game not found: " + SOME_GAME.getId());
         verify(gameRepository).findById(SOME_GAME.getId());
         verifyNoMoreInteractions(gameRepository);
         verifyNoInteractions(gameEntityMapper);
@@ -92,12 +93,9 @@ class InMemoryGameRepositoryTest {
     void givenMissingGame__whenDeleting__thenThrowNotFoundException() {
         given(gameRepository.findById(SOME_GAME.getId())).willReturn(Optional.empty());
 
-        var exception =
-                assertThatThrownBy(() -> inMemoryGameRepository.deleteById(SOME_GAME.getId()));
+        var exception = assertThatThrownBy(() -> inMemoryGameRepository.deleteById(SOME_GAME.getId()));
 
-        exception
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("Game not found: " + SOME_GAME.getId());
+        exception.isInstanceOf(NotFoundException.class).hasMessage("Game not found: " + SOME_GAME.getId());
         verify(gameRepository).findById(SOME_GAME.getId());
         verifyNoMoreInteractions(gameRepository);
         verifyNoInteractions(gameEntityMapper);
